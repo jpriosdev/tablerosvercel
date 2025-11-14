@@ -85,3 +85,186 @@
 ::-webkit-scrollbar-thumb:hover {
   @apply bg-gray-500;
 }
+/* Añade estos estilos a tu CSS existente */
+
+/* Controles del header */
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.controls button {
+  padding: 0.5rem 1rem;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.controls button:hover {
+  background: #2563eb;
+}
+
+.controls button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.controls button.loading {
+  background: #6b7280;
+}
+
+.last-update {
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+/* Alertas */
+.alerts-section {
+  margin-bottom: 2rem;
+}
+
+.alert {
+  padding: 1rem;
+  margin-bottom: 0.5rem;
+  border-radius: 0.5rem;
+  border-left: 4px solid;
+}
+
+.alert-critical {
+  background: #fef2f2;
+  border-color: #ef4444;
+  color: #dc2626;
+}
+
+.alert-warning {
+  background: #fffbeb;
+  border-color: #f59e0b;
+  color: #d97706;
+}
+
+.alert h4 {
+  margin: 0 0 0.5rem 0;
+  font-weight: 600;
+}
+
+.alert p {
+  margin: 0 0 0.25rem 0;
+  font-size: 0.875rem;
+}
+
+.alert small {
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+/* Error banner */
+.error-banner {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  margin-bottom: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.error-banner button {
+  background: #dc2626;
+  color: white;
+  border: none;
+  padding: 0.25rem 0.75rem;
+  border-radius: 0.25rem;
+  cursor: pointer;
+}
+
+/* Recomendaciones */
+.recommendations-section {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  margin-top: 2rem;
+}
+
+.recommendation {
+  border-left: 4px solid #3b82f6;
+  padding-left: 1rem;
+  margin-bottom: 1rem;
+}
+
+.recommendation h4 {
+  margin: 0 0 0.5rem 0;
+  color: #111827;
+}
+
+.recommendation p {
+  margin: 0 0 0.5rem 0;
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+
+.recommendation-meta {
+  display: flex;
+  gap: 1rem;
+}
+
+.impact, .effort {
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.impact-high, .effort-high {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.impact-medium, .effort-medium {
+  background: #fffbeb;
+  color: #d97706;
+}
+
+.impact-low, .effort-low {
+  background: #f0fdf4;
+  color: #16a34a;
+}
+
+/* Loading state */
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+}
+
+.spinner {
+  width: 2rem;
+  height: 2rem;
+  border: 2px solid #e5e7eb;
+  border-top: 2px solid #3b82f6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

@@ -1,12 +1,19 @@
 /** @type {import('tailwindcss').Config} */
+const defaultTheme = require('tailwindcss/defaultTheme');
+const colors = require('tailwindcss/colors');
+
 module.exports = {
     content: [
       './pages/**/*.{js,ts,jsx,tsx,mdx}',
       './components/**/*.{js,ts,jsx,tsx,mdx}',
+      './styles/**/*.{css}',
+      './styles/globals.css',
     ],
     theme: {
       extend: {
+        // ensure the default gray palette is available (prevents unknown utility errors)
         colors: {
+          gray: colors.gray,
           'executive': {
             50: '#f0f9ff',
             500: '#0ea5e9',
@@ -16,16 +23,19 @@ module.exports = {
           },
           'success': {
             50: '#f0fdf4',
+            200: '#bbf7d0',
             500: '#22c55e',
             600: '#16a34a',
           },
           'warning': {
             50: '#fffbeb',
+            200: '#fed7aa',
             500: '#f59e0b',
             600: '#d97706',
           },
           'danger': {
             50: '#fef2f2',
+            200: '#fecaca',
             500: '#ef4444',
             600: '#dc2626',
           }
