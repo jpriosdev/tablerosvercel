@@ -1,5 +1,5 @@
 // components/ExecutiveDashboard.js
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { 
@@ -180,7 +180,8 @@ export default function ExecutiveDashboard({
                 <h1 className="text-2xl font-bold text-gray-900">
                   Dashboard Ejecutivo QA
                 </h1>
-                {isParametricMode && (
+                {/* Modo Paramétrico - Oculto temporalmente */}
+                {false && isParametricMode && (
                   <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full">
                     Modo Paramétrico
                   </span>
@@ -201,9 +202,9 @@ export default function ExecutiveDashboard({
               )}
               
               <div className="text-right">
-                <p className="text-sm text-gray-500">Última actualización</p>
+                <p className="text-sm text-gray-500">Último incidente reportado</p>
                 <p className="text-sm font-medium text-gray-900">
-                  {currentLastUpdated ? format(currentLastUpdated, 'dd/MM/yyyy HH:mm', { locale: es }) : 'Nunca'}
+                  {currentLastUpdated ? format(currentLastUpdated, 'dd/MM/yyyy HH:mm', { locale: es }) : 'Sin reportar'}
                 </p>
               </div>
               
@@ -308,49 +309,229 @@ export default function ExecutiveDashboard({
 
 function OverviewTab({ data }) {
   const { kpis, summary } = data;
+  const sprintList = data.sprintData?.map(s => s.sprint || s.name || s.id) || [];
+  const [selectedSprints, setSelectedSprints] = React.useState(['Todos']);
+
+  // Filtro de sprints con checkboxes
+  const handleSprintToggle = (sprint) => {
+    if (sprint === 'Todos') {
+      setSelectedSprints(['Todos']);
+    } else {
+      setSelectedSprints(prev => {
+        // Si "Todos" está seleccionado, lo quitamos y solo dejamos el sprint clickeado
+        if (prev.includes('Todos')) {
+          return [sprint];
+        }
+        
+        // Si el sprint ya está seleccionado, lo quitamos
+        if (prev.includes(sprint)) {
+          const filtered = prev.filter(s => s !== sprint);
+          // Si no queda ninguno, volvemos a "Todos"
+          return filtered.length === 0 ? ['Todos'] : filtered;
+        }
+        
+        // Si no está seleccionado, lo agregamos
+        return [...prev, sprint];
+      });
+    }
+  };
+
+  // Filtrar datos por sprints seleccionados
+  const filteredSprintData = selectedSprints.includes('Todos')
+    ? data.sprintData
+    : data.sprintData?.filter(s => selectedSprints.includes(s.sprint || s.name || s.id));
+
+  // Recalcular KPIs basados en los sprints seleccionados
+  const totalTestCases = filteredSprintData?.reduce((acc, s) => acc + (s.testCases || s.testCasesExecuted || 0), 0) || 0;
+  const totalBugs = filteredSprintData?.reduce((acc, s) => acc + (s.bugs || s.bugsFound || 0), 0) || summary.totalBugs || 0;
+  const bugsClosed = filteredSprintData?.reduce((acc, s) => acc + (s.bugsResolved || s.bugsClosed || 0), 0) || summary.bugsClosed || 0;
   
+  // Calcular bugs críticos desde los sprints filtrados
+  // Si no hay filtro, usar bugsByPriority global, si hay filtro calcular proporcionalmente
+  let criticalBugsPending, criticalBugsTotal, criticalBugsMasAlta, criticalBugsAlta;
+  
+  if (selectedSprints.includes('Todos')) {
+    // Sin filtro: usar datos globales
+    criticalBugsMasAlta = data.bugsByPriority?.['Más alta']?.count || 0;
+    criticalBugsAlta = data.bugsByPriority?.['Alta']?.count || 0;
+    criticalBugsPending = (data.bugsByPriority?.['Más alta']?.pending || 0) + (data.bugsByPriority?.['Alta']?.pending || 0);
+    criticalBugsTotal = criticalBugsMasAlta + criticalBugsAlta;
+  } else {
+    // Con filtro: calcular proporcionalmente basado en los bugs de los sprints seleccionados
+    const globalTotalBugs = summary.totalBugs || 1;
+    const globalCriticalPending = (data.bugsByPriority?.['Más alta']?.pending || 0) + (data.bugsByPriority?.['Alta']?.pending || 0);
+    const globalCriticalTotal = (data.bugsByPriority?.['Más alta']?.count || 0) + (data.bugsByPriority?.['Alta']?.count || 0);
+    const globalMasAlta = data.bugsByPriority?.['Más alta']?.count || 0;
+    const globalAlta = data.bugsByPriority?.['Alta']?.count || 0;
+    
+    // Calcular proporcionalmente según los bugs de los sprints filtrados
+    const ratio = totalBugs / globalTotalBugs;
+    criticalBugsMasAlta = Math.round(ratio * globalMasAlta);
+    criticalBugsAlta = Math.round(ratio * globalAlta);
+    criticalBugsPending = Math.round(ratio * globalCriticalPending);
+    criticalBugsTotal = criticalBugsMasAlta + criticalBugsAlta;
+  }
+  
+  const avgTestCasesPerSprint = filteredSprintData && filteredSprintData.length > 0
+    ? Math.round(totalTestCases / filteredSprintData.length)
+    : kpis.avgTestCasesPerSprint || 0;
+  
+  const resolutionEfficiency = totalBugs > 0 
+    ? Math.round((bugsClosed / totalBugs) * 100) 
+    : kpis.resolutionEfficiency || 0;
+  
+  const criticalBugsRatio = totalBugs > 0 
+    ? Math.round((criticalBugsPending / totalBugs) * 100) 
+    : kpis.criticalBugsRatio || 0;
+
+  // Calcular tendencias comparando primera mitad vs segunda mitad de sprints seleccionados
+  const calculateTrend = (getData) => {
+    if (!filteredSprintData || filteredSprintData.length < 2) return 0;
+    
+    const midPoint = Math.floor(filteredSprintData.length / 2);
+    const firstHalf = filteredSprintData.slice(0, midPoint);
+    const secondHalf = filteredSprintData.slice(midPoint);
+    
+    const firstAvg = firstHalf.reduce((acc, s) => acc + getData(s), 0) / firstHalf.length;
+    const secondAvg = secondHalf.reduce((acc, s) => acc + getData(s), 0) / secondHalf.length;
+    
+    if (firstAvg === 0) return 0;
+    return Math.round(((secondAvg - firstAvg) / firstAvg) * 100);
+  };
+
+  const testCasesTrend = calculateTrend(s => s.testCases || s.testCasesExecuted || 0);
+  const resolutionTrend = calculateTrend(s => {
+    const total = s.bugs || s.bugsFound || 0;
+    const resolved = s.bugsResolved || s.bugsClosed || 0;
+    return total > 0 ? (resolved / total) * 100 : 0;
+  });
+  const criticalBugsTrend = calculateTrend(s => s.bugs || s.bugsFound || 0) * -1; // Invertido porque menos bugs es mejor
+
   return (
     <div className="space-y-8">
+      {/* Filtro de Sprints con Checkboxes */}
+      <div className="mb-6 bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+        <div className="flex items-center justify-between mb-3">
+          <label className="text-sm font-medium text-gray-700">
+            <Settings className="w-4 h-4 inline mr-2" />
+            Filtrar por Sprint:
+          </label>
+          {!selectedSprints.includes('Todos') && selectedSprints.length > 0 && (
+            <span className="text-sm text-executive-600 font-medium">
+              📊 {selectedSprints.length} seleccionado{selectedSprints.length > 1 ? 's' : ''}
+            </span>
+          )}
+        </div>
+        
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+          <label className="flex items-center p-2 rounded-lg border border-gray-200 hover:bg-gray-50 cursor-pointer transition-colors">
+            <input
+              type="checkbox"
+              checked={selectedSprints.includes('Todos')}
+              onChange={() => handleSprintToggle('Todos')}
+              className="w-4 h-4 text-executive-600 rounded focus:ring-2 focus:ring-executive-500"
+            />
+            <span className="ml-2 text-sm font-medium text-gray-900">Todos</span>
+          </label>
+          
+          {sprintList.map((sprint, index) => {
+            // Obtener datos del sprint para el tooltip
+            const sprintData = data.sprintData?.find(s => (s.sprint || s.name || s.id) === sprint);
+            
+            return (
+              <label
+                key={sprint}
+                className={`flex items-center p-2 rounded-lg border transition-colors cursor-pointer relative group ${
+                  selectedSprints.includes(sprint) && !selectedSprints.includes('Todos')
+                    ? 'border-executive-500 bg-executive-50'
+                    : 'border-gray-200 hover:bg-gray-50'
+                }`}
+              >
+                <input
+                  type="checkbox"
+                  checked={selectedSprints.includes(sprint) && !selectedSprints.includes('Todos')}
+                  onChange={() => handleSprintToggle(sprint)}
+                  className="w-4 h-4 text-executive-600 rounded focus:ring-2 focus:ring-executive-500"
+                />
+                <span className="ml-2 text-sm text-gray-700">{sprint}</span>
+                
+                {/* Tooltip personalizado que aparece al hover */}
+                <div className="absolute left-0 top-full mt-2 hidden group-hover:block bg-gray-900 text-white text-xs rounded-lg p-3 shadow-lg z-50 w-64 whitespace-pre-line">
+                  <div className="font-semibold mb-2 border-b border-gray-700 pb-1">{sprint}</div>
+                  {sprintData ? (
+                    <div className="space-y-1">
+                       <div>📅 <strong>Fechas:</strong> {sprintData.startDate || 'N/A'}</div>
+                      <div>💻 <strong>Versión:</strong> {sprintData.version || 'N/A'}</div>
+                      <div>🌎 <strong>Ambiente:</strong> {sprintData.environment || 'N/A'}</div>
+                      <div>📋 <strong>Test Plan:</strong> {sprintData.testPlan || 'N/A'}</div>
+                       <div>🏷️ <strong>Etiquetas:</strong> {sprintData.tags || 'N/A'}</div>
+                      <div className="border-t border-gray-700 pt-1 mt-1">
+                        <div>🐞 Bugs: {sprintData.bugs || 0} | ✅ Resueltos: {sprintData.bugsResolved || 0}</div>
+                        <div>🧪 Casos: {sprintData.testCases || 0}</div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div>Sin información adicional disponible</div>
+                  )}
+                </div>
+              </label>
+            );
+          })}
+        </div>
+        
+        <p className="text-xs text-gray-500 mt-3">
+          💡 Selecciona "Todos" o elige sprints específicos. Los indicadores y gráficos se actualizarán automáticamente.
+        </p>
+      </div>
+
       {/* KPIs Principales con datos mejorados */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <KPICard
-          title="Cobertura de Pruebas"
-          value={`${kpis.testCoverage || 0}%`}
-          icon={<Target className="w-8 h-8 text-executive-600" />}
-          trend={kpis.testCoverageTrend || 0}
-          status={kpis.testCoverage >= 80 ? "success" : "warning"}
-          subtitle={`${summary.testCasesExecuted || 0} de ${summary.testCasesTotal || 0} casos`}
+          title="Media Casos Ejecutados por Sprint"
+          value={avgTestCasesPerSprint}
+          icon={<Activity className="w-8 h-8 text-blue-600" />}
+          trend={testCasesTrend}
+          status={avgTestCasesPerSprint >= 200 ? "success" : "warning"}
+          subtitle={`${totalTestCases} casos ejecutados total`}
+          formula={`Media = ${totalTestCases} / ${filteredSprintData?.length || 1}`}
+          tooltip={"La media de casos ejecutados por sprint indica la cantidad promedio de pruebas realizadas en cada ciclo. Es útil para evaluar la productividad y la cobertura de pruebas en el tiempo. Un valor alto sugiere buen ritmo de ejecución y control de calidad."}
         />
         
         <KPICard
           title="Eficiencia de Resolución"
-          value={`${kpis.resolutionEfficiency || 0}%`}
+          value={`${resolutionEfficiency}%`}
           icon={<CheckCircle className="w-8 h-8 text-success-600" />}
-          trend={kpis.resolutionTrend || 0}
-          status={kpis.resolutionEfficiency >= 70 ? "success" : "warning"}
-          subtitle={`${summary.bugsClosed || 0} bugs resueltos`}
+          trend={resolutionTrend}
+          status={resolutionEfficiency >= 70 ? "success" : "warning"}
+          subtitle={`${bugsClosed} resueltos de ${totalBugs} total (${totalBugs - bugsClosed} abiertos)`}
+          formula={`Eficiencia = ${bugsClosed} / ${totalBugs} × 100`}
+          tooltip={"La eficiencia de resolución mide el porcentaje de bugs solucionados respecto al total reportado. Es clave para evaluar la capacidad del equipo de cerrar incidencias y mantener la calidad del producto."}
         />
         
         <KPICard
-          title="Índice de Calidad"
-          value={`${kpis.qualityIndex || 0}%`}
-          icon={<BarChart3 className="w-8 h-8 text-warning-600" />}
-          trend={kpis.sprintTrend || 0}
-          status={kpis.qualityIndex >= 75 ? "success" : "warning"}
-          subtitle="Tendencia general"
-        />
-        
-        <KPICard
-          title="Bugs Críticos"
-          value={`${kpis.criticalBugsRatio || 0}%`}
+          title="Bugs Críticos Detectados"
+          value={criticalBugsTotal}
           icon={<Bug className="w-8 h-8 text-danger-600" />}
-          trend={kpis.criticalBugsTrend || 0}
-          status={kpis.criticalBugsRatio <= 20 ? "success" : "danger"}
-          subtitle="Requieren atención"
+          trend={criticalBugsTrend}
+          status={criticalBugsTotal <= 20 ? "success" : "danger"}
+          subtitle={`${Math.round((criticalBugsTotal / totalBugs) * 100)}% del total de bugs`}
+          formula={`Críticos = Más alta (${criticalBugsMasAlta}) + Alta (${criticalBugsAlta})`}
+          tooltip={"Total de bugs críticos detectados con prioridad 'Más alta' y 'Alta'. Indica el volumen de incidencias graves que requieren atención."}
+        />
+        
+        <KPICard
+          title="Estado Bugs Críticos"
+          value={`${criticalBugsPending}`}
+          icon={<AlertTriangle className="w-8 h-8 text-warning-600" />}
+          trend={criticalBugsTrend}
+          status={criticalBugsPending <= 10 ? "success" : "danger"}
+          subtitle={`${criticalBugsTotal - criticalBugsPending} resueltos de ${criticalBugsTotal} críticos`}
+          formula={`Pendientes = ${criticalBugsPending} | Resueltos = ${criticalBugsTotal - criticalBugsPending}`}
+          tooltip={"Estado de los bugs críticos: muestra cuántos están pendientes y cuántos ya fueron resueltos. Los pendientes requieren atención inmediata."}
         />
       </div>
 
-      {/* Nuevas métricas si están disponibles */}
+      {/* Segunda fila de métricas adicionales */}
       {kpis.averageResolutionTime && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <KPICard
@@ -360,6 +541,7 @@ function OverviewTab({ data }) {
             trend={0}
             status="info"
             subtitle="Tiempo promedio"
+            tooltip={"El tiempo promedio de resolución mide cuántos días tarda en cerrarse un bug desde su reporte. Es clave para evaluar la velocidad de respuesta del equipo."}
           />
           
           {kpis.testExecutionRate && (
@@ -370,6 +552,7 @@ function OverviewTab({ data }) {
               trend={0}
               status="info"
               subtitle="Pruebas ejecutadas"
+              tooltip={"La tasa de ejecución muestra el porcentaje de casos de prueba ejecutados respecto al total planificado. Indica el nivel de cobertura alcanzado."}
             />
           )}
           
@@ -377,23 +560,42 @@ function OverviewTab({ data }) {
             <KPICard
               title="Tasa de Fuga"
               value={`${kpis.bugLeakageRate}%`}
-              icon={<TrendingUp className="w-8 h-8 text-orange-600" />}
+              icon={<TrendingUp className="w-8 h-8 text-red-600" />}
               trend={0}
-              status={kpis.bugLeakageRate <= 5 ? "success" : "warning"}
+              status={kpis.bugLeakageRate <= 5 ? "success" : "danger"}
               subtitle="Bugs en producción"
+              tooltip={"La tasa de fuga mide el porcentaje de bugs que escaparon a producción. Un valor bajo indica buena calidad de pruebas pre-producción."}
             />
           )}
         </div>
       )}
 
-      {/* Gráficos principales */}
+      {/* Gráficos principales filtrados */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <SprintTrendChart data={data.sprintData || data.trends?.bugsPerSprint} />
-        <RiskMatrix data={data.bugsByPriority} />
+        <div className="executive-card">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">
+            Tendencia de Sprints Seleccionados
+          </h3>
+          <SprintTrendChart data={filteredSprintData || data.sprintData || data.trends?.bugsPerSprint} />
+        </div>
+        
+        <div className="executive-card">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">
+            Matriz de Riesgo
+          </h3>
+          <RiskMatrix data={data.bugsByPriority} />
+        </div>
       </div>
 
-      {/* Análisis por módulos */}
-      <ModuleAnalysis data={data.bugsByModule} />
+      {/* Resumen de módulos críticos */}
+      {data.moduleData && (
+        <div className="executive-card">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">
+            Análisis de Módulos
+          </h3>
+          <ModuleAnalysis data={data.moduleData} />
+        </div>
+      )}
     </div>
   );
 }

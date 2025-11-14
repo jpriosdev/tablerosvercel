@@ -1,0 +1,329 @@
+{
+  "summary": {
+    "totalBugs": 138,
+    "bugsClosed": 57,
+    "bugsPending": 65,
+    "testCasesTotal": 692,
+    "testCasesExecuted": 692,
+    "testCasesPassed": 692,
+    "testCasesFailed": 0
+  },
+  "bugsByPriority": {
+    "Más alta": {
+      "count": 7,
+      "pending": 2,
+      "resolved": 4
+    },
+    "Alta": {
+      "count": 41,
+      "pending": 18,
+      "resolved": 19
+    },
+    "Media": {
+      "count": 82,
+      "pending": 36,
+      "resolved": 34
+    },
+    "Baja": {
+      "count": 8,
+      "pending": 7,
+      "resolved": 0
+    },
+    "Más baja": {
+      "count": 0,
+      "pending": 0,
+      "resolved": 0
+    }
+  },
+  "bugsByModule": {
+    "BOT": {
+      "count": 5,
+      "percentage": 0,
+      "pending": 2
+    },
+    "POS": {
+      "count": 11,
+      "percentage": 0,
+      "pending": 4
+    },
+    "BUGS X ": {
+      "count": "Estado",
+      "percentage": 0,
+      "pending": null
+    },
+    "Módulo": {
+      "count": "Cancelado",
+      "percentage": 0,
+      "pending": null
+    }
+  },
+  "developerData": [
+    {
+      "name": "Andres Vergara",
+      "assigned": 22,
+      "resolved": 10,
+      "pending": 8,
+      "totalBugs": 22,
+      "workload": "Alto"
+    },
+    {
+      "name": "Emiliano Fraile",
+      "assigned": 7,
+      "resolved": 0,
+      "pending": 7,
+      "totalBugs": 7,
+      "workload": "Bajo"
+    },
+    {
+      "name": "Juan Camilo Collantes Tovar",
+      "assigned": 19,
+      "resolved": 8,
+      "pending": 8,
+      "totalBugs": 19,
+      "workload": "Alto"
+    },
+    {
+      "name": "Juan Munoz",
+      "assigned": 31,
+      "resolved": 13,
+      "pending": 18,
+      "totalBugs": 31,
+      "workload": "Alto"
+    },
+    {
+      "name": "Ludovic Hern",
+      "assigned": 7,
+      "resolved": 3,
+      "pending": 4,
+      "totalBugs": 7,
+      "workload": "Bajo"
+    },
+    {
+      "name": "Nicolas Dubiansky",
+      "assigned": 7,
+      "resolved": 3,
+      "pending": 1,
+      "totalBugs": 7,
+      "workload": "Bajo"
+    },
+    {
+      "name": "Sergio Ordaz Romero",
+      "assigned": 12,
+      "resolved": 2,
+      "pending": 8,
+      "totalBugs": 12,
+      "workload": "Medio"
+    },
+    {
+      "name": "Bugs por ",
+      "assigned": 0,
+      "resolved": 0,
+      "pending": "Estado000",
+      "totalBugs": 0,
+      "workload": "Bajo"
+    },
+    {
+      "name": "Andres Vergara",
+      "assigned": 0,
+      "resolved": 0,
+      "pending": 20,
+      "totalBugs": 0,
+      "workload": "Bajo"
+    },
+    {
+      "name": "Emiliano Fraile",
+      "assigned": 0,
+      "resolved": 0,
+      "pending": 6,
+      "totalBugs": 0,
+      "workload": "Bajo"
+    },
+    {
+      "name": "Juan Camilo Collantes Tovar",
+      "assigned": 0,
+      "resolved": 0,
+      "pending": 17,
+      "totalBugs": 0,
+      "workload": "Bajo"
+    },
+    {
+      "name": "Juan Munoz",
+      "assigned": 0,
+      "resolved": 0,
+      "pending": 28,
+      "totalBugs": 0,
+      "workload": "Bajo"
+    },
+    {
+      "name": "Ludovic Hern",
+      "assigned": 0,
+      "resolved": 0,
+      "pending": 6,
+      "totalBugs": 0,
+      "workload": "Bajo"
+    },
+    {
+      "name": "Nicolas Dubiansky",
+      "assigned": 0,
+      "resolved": 0,
+      "pending": 6,
+      "totalBugs": 0,
+      "workload": "Bajo"
+    },
+    {
+      "name": "Sergio Ordaz Romero",
+      "assigned": 0,
+      "resolved": 0,
+      "pending": 10,
+      "totalBugs": 0,
+      "workload": "Bajo"
+    }
+  ],
+  "sprintData": [
+    {
+      "sprint": "Sprint 16",
+      "bugs": 46,
+      "bugsResolved": 25,
+      "bugsPending": 14,
+      "testCases": 135,
+      "velocity": 19,
+      "plannedVelocity": 149,
+      "change": 0,
+      "version": "V0.4",
+      "startDate": "4-12 Agosto",
+      "environment": "DEV",
+      "testPlan": 1015.742,
+      "tags": "QA-IntegraciónV0.4, QA-SmokeV0.4"
+    },
+    {
+      "sprint": "Sprint 17",
+      "bugs": 19,
+      "bugsResolved": 13,
+      "bugsPending": 4,
+      "testCases": 139,
+      "velocity": 20,
+      "plannedVelocity": 153,
+      "change": -59,
+      "version": "V0.5",
+      "startDate": "18-22 Agosto",
+      "environment": "DEV",
+      "testPlan": 1213.1202,
+      "tags": "QA-IntegraciónV0.5, QA-SmokeV0.5"
+    },
+    {
+      "sprint": "Sprint 18",
+      "bugs": 28,
+      "bugsResolved": 12,
+      "bugsPending": 15,
+      "testCases": 105,
+      "velocity": 15,
+      "plannedVelocity": 116,
+      "change": 47,
+      "version": "V0.6",
+      "startDate": "1-12 Sept",
+      "environment": "SIT",
+      "testPlan": 1376.1351,
+      "tags": "QA-IntegraciónV0.6, QA-SmokeV0.6"
+    },
+    {
+      "sprint": "Sprint 19",
+      "bugs": 21,
+      "bugsResolved": 2,
+      "bugsPending": 17,
+      "testCases": 142,
+      "velocity": 20,
+      "plannedVelocity": 156,
+      "change": -25,
+      "version": "V0.7",
+      "startDate": "15-26 -Sept",
+      "environment": "SIT",
+      "testPlan": "1612,1536,1498",
+      "tags": "QA-IntegraciónV0.7, QA-SmokeV0.7, QA-EquipoMV0.7"
+    },
+    {
+      "sprint": "Sprint 20",
+      "bugs": 19,
+      "bugsResolved": 0,
+      "bugsPending": 15,
+      "testCases": 136,
+      "velocity": 19,
+      "plannedVelocity": 150,
+      "change": -10,
+      "version": "V0.8",
+      "startDate": "29 - 13 - Oct",
+      "environment": "SIT",
+      "testPlan": 1904.1874,
+      "tags": "QA-IntegraciónV0.8, QA-SmokeV0.8"
+    },
+    {
+      "sprint": "Sprint 21",
+      "bugs": 5,
+      "bugsResolved": 0,
+      "bugsPending": 5,
+      "testCases": 35,
+      "velocity": 5,
+      "plannedVelocity": 39,
+      "change": -74,
+      "version": "V0.9",
+      "startDate": "14-21-oCT",
+      "environment": "SIT",
+      "testPlan": "",
+      "tags": "QA-IntegraciónV0.9, QA-SmokeV0.9"
+    }
+  ],
+  "bugsByCategory": {
+    "Funcional": {
+      "count": 0,
+      "percentage": 0
+    },
+    "Look&Feel": {
+      "count": 6,
+      "percentage": 75
+    },
+    "Contenido/Datos": {
+      "count": 1,
+      "percentage": 13
+    },
+    "Eventos_iOT": {
+      "count": 0,
+      "percentage": 0
+    },
+    "Integración": {
+      "count": 0,
+      "percentage": 0
+    }
+  },
+  "qualityMetrics": {
+    "testAutomation": 45,
+    "cycleTime": 5
+  },
+  "riskAreas": [
+    {
+      "area": "BOT",
+      "bugs": 51,
+      "percentage": null,
+      "risk": "Bajo",
+      "impact": "Crítico"
+    },
+    {
+      "area": "POS",
+      "bugs": 86,
+      "percentage": null,
+      "risk": "Bajo",
+      "impact": "Crítico"
+    }
+  ],
+  "metadata": {
+    "lastUpdated": "2025-11-14T22:45:37.622Z",
+    "source": "excel-file",
+    "version": "1.0",
+    "sprints": [
+      "Sprint 16",
+      "Sprint 17",
+      "Sprint 18",
+      "Sprint 19",
+      "Sprint 20",
+      "Sprint 21"
+    ]
+  }
+}

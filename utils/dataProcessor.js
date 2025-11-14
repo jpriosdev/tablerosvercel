@@ -66,12 +66,13 @@ export class QADataProcessor {
     const testCasesExecuted = rawData.summary?.testCasesExecuted || 0;
     const testCasesTotal = rawData.summary?.testCasesTotal || 1;
     
-    const testCoverage = Math.round((testCasesExecuted / testCasesTotal) * 100);
+    // Calcular media de casos ejecutados por sprint
+    const avgTestCasesPerSprint = this.calculateAvgTestCasesPerSprint(rawData.sprintData);
     const resolutionEfficiency = totalBugs > 0 ? Math.round((bugsClosed / totalBugs) * 100) : 0;
     const defectDensity = testCasesExecuted > 0 ? (totalBugs / testCasesExecuted).toFixed(2) : 0;
     
     return {
-      testCoverage,
+      avgTestCasesPerSprint,  // Reemplaza testCoverage
       resolutionEfficiency,
       qualityIndex: this.calculateQualityIndex(rawData, config.weights),
       sprintTrend: this.calculateSprintTrend(rawData.sprintData),
@@ -97,6 +98,13 @@ export class QADataProcessor {
       firstPassYield: this.calculateFirstPassYield(rawData),
       escapeRate: this.calculateEscapeRate(rawData)
     };
+  }
+
+  static calculateAvgTestCasesPerSprint(sprintData) {
+    if (!sprintData || sprintData.length === 0) return 0;
+    
+    const totalCases = sprintData.reduce((sum, sprint) => sum + (sprint.testCases || sprint.casosEjecutados || 0), 0);
+    return Math.round(totalCases / sprintData.length);
   }
 
   static calculateQualityIndex(data, weights) {
