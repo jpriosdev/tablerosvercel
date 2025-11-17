@@ -590,9 +590,8 @@ function OverviewTab({ data, recommendations }) {
           const eff = sprint.resolutionEfficiency || 70;
           return Math.round(15 - (eff / 10));
         case 'defectDensity':
-          const bugs = sprint.bugs || 0;
-          const hus = 6; // Estimado
-          return parseFloat((bugs / hus).toFixed(2));
+          // Retornar bugs por sprint directamente (datos reales)
+          return sprint.bugs || 0;
         default:
           return 0;
       }

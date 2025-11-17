@@ -766,67 +766,67 @@ export default function DetailModal({ modal, onClose, recommendations }) {
       {/* Resumen general */}
       <div className="bg-orange-50 p-6 rounded-lg border border-orange-200">
         <h3 className="text-2xl font-bold text-orange-600 mb-2">
-          {data.avg} bugs/HU
+          {data.avg} bugs/sprint
         </h3>
-        <p className="text-sm text-gray-600">Densidad de defectos por Historia de Usuario</p>
+        <p className="text-sm text-gray-600">Promedio de bugs detectados por sprint</p>
       </div>
 
       {/* Métricas clave */}
       <div className="grid grid-cols-3 gap-4">
         <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
-          <div className="text-sm text-gray-600 mb-1">Total HUs</div>
+          <div className="text-sm text-gray-600 mb-1">Total Bugs</div>
           <div className="text-2xl font-bold text-gray-900">{data.total}</div>
-          <div className="text-xs text-gray-500 mt-1">Estimadas en sprints</div>
+          <div className="text-xs text-gray-500 mt-1">En {data.sprints} sprints</div>
         </div>
         <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
-          <div className="text-sm text-gray-600 mb-1">Bugs Totales</div>
-          <div className="text-2xl font-bold text-gray-900">{Math.round(data.avg * data.total)}</div>
-          <div className="text-xs text-gray-500 mt-1">Detectados en QA</div>
+          <div className="text-sm text-gray-600 mb-1">Máximo</div>
+          <div className="text-2xl font-bold text-danger-600">{data.max}</div>
+          <div className="text-xs text-gray-500 mt-1">Peor sprint</div>
         </div>
         <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
-          <div className="text-sm text-gray-600 mb-1">Bugs Críticos/HU</div>
-          <div className="text-2xl font-bold text-danger-600">{data.critical}</div>
-          <div className="text-xs text-gray-500 mt-1">Alta prioridad</div>
+          <div className="text-sm text-gray-600 mb-1">Mínimo</div>
+          <div className="text-2xl font-bold text-success-600">{data.min}</div>
+          <div className="text-xs text-gray-500 mt-1">Mejor sprint</div>
         </div>
       </div>
 
       {/* Análisis de calidad */}
       <div>
-        <h4 className="font-semibold text-gray-800 mb-3">Análisis de Calidad del Código</h4>
+        <h4 className="font-semibold text-gray-800 mb-3">Análisis de Calidad del Proceso</h4>
         <div className="space-y-3">
-          {data.avg <= 0.5 && (
+          {data.avg <= 15 && (
             <div className="flex items-start p-3 bg-success-50 rounded-lg border border-success-200">
               <CheckCircle className="w-5 h-5 text-success-600 mt-0.5 mr-3 flex-shrink-0" />
               <div>
                 <div className="font-medium text-success-900">Calidad Excepcional</div>
-                <div className="text-sm text-success-700">Las HUs tienen muy baja densidad de defectos. El código es robusto y bien testeado.</div>
+                <div className="text-sm text-success-700">Baja densidad de defectos por sprint. El proceso de desarrollo es robusto y las prácticas de calidad son efectivas.</div>
               </div>
             </div>
           )}
-          {data.avg > 0.5 && data.avg <= 1.5 && (
+          {data.avg > 15 && data.avg <= 25 && (
             <div className="flex items-start p-3 bg-blue-50 rounded-lg border border-blue-200">
               <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5 mr-3 flex-shrink-0" />
               <div>
                 <div className="font-medium text-blue-900">Calidad Aceptable</div>
-                <div className="text-sm text-blue-700">Densidad dentro del rango normal. Mantener prácticas actuales de desarrollo.</div>
+                <div className="text-sm text-blue-700">Densidad dentro del rango normal para desarrollo ágil. Mantener prácticas actuales de testing y code review.</div>
               </div>
             </div>
           )}
-          {data.avg > 1.5 && data.avg <= 3.0 && (
+          {data.avg > 25 && data.avg <= 35 && (
             <div className="flex items-start p-3 bg-warning-50 rounded-lg border border-warning-200">
               <AlertCircle className="w-5 h-5 text-warning-600 mt-0.5 mr-3 flex-shrink-0" />
               <div>
                 <div className="font-medium text-warning-900">Atención Requerida</div>
-                <div className="text-sm text-warning-700">Alta densidad de defectos. Revisar prácticas de desarrollo y cobertura de unit tests.</div>
+                <div className="text-sm text-warning-700">Alta densidad de defectos. Considerar aumentar cobertura de unit tests y revisión de código antes de QA.</div>
               </div>
             </div>
           )}
-          {data.avg > 3.0 && (
+          {data.avg > 35 && (
             <div className="flex items-start p-3 bg-danger-50 rounded-lg border border-danger-200">
               <AlertCircle className="w-5 h-5 text-danger-600 mt-0.5 mr-3 flex-shrink-0" />
               <div>
                 <div className="font-medium text-danger-900">Nivel Crítico</div>
-                <div className="text-sm text-danger-700">Densidad muy alta. Requiere intervención inmediata en proceso de desarrollo.</div>
+                <div className="text-sm text-danger-700">Densidad muy alta. Requiere intervención inmediata: revisar proceso de desarrollo, incrementar testing previo y análisis de causas raíz.</div>
               </div>
             </div>
           )}
@@ -836,15 +836,16 @@ export default function DetailModal({ modal, onClose, recommendations }) {
       {/* Benchmark */}
       <div>
         <h4 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
-          Escala de Referencia de la Industria
+          Rangos de Referencia
           <div className="group relative">
             <Info className="w-4 h-4 text-gray-400 cursor-help" />
             <div className="absolute left-0 top-6 hidden group-hover:block bg-gray-900 text-white text-xs rounded-lg p-3 shadow-lg z-50 w-80">
-              <div className="font-semibold mb-1">💡 Benchmarks de la Industria</div>
+              <div className="font-semibold mb-1">💡 Referencias Configurables</div>
               <div className="text-gray-200">
-                Estos valores son benchmarks de referencia basados en estándares de la industria de software. 
-                Un valor &lt; 1.0 bugs/HU generalmente indica código de alta calidad con buenas prácticas de desarrollo. 
-                Valores &gt; 2.0 sugieren revisar procesos de desarrollo, unit testing y code reviews.
+                Estos valores son referencias configurables según el contexto del proyecto. 
+                Dependen de: complejidad del producto, madurez del equipo, nivel de automatización, 
+                alcance del sprint y tipo de funcionalidades. Se recomienda establecer targets 
+                propios basados en histórico y ajustarlos periódicamente.
               </div>
             </div>
           </div>
@@ -852,25 +853,29 @@ export default function DetailModal({ modal, onClose, recommendations }) {
         <div className="grid grid-cols-4 gap-3 text-center">
           <div className="p-3 bg-success-50 rounded-lg">
             <div className="text-xs text-success-700 font-medium mb-1">Excelente</div>
-            <div className="text-sm font-bold text-success-600">&lt; 0.5</div>
+            <div className="text-sm font-bold text-success-600">≤ 15</div>
+            <div className="text-xs text-success-600 mt-1">bugs/sprint</div>
           </div>
           <div className="p-3 bg-blue-50 rounded-lg">
             <div className="text-xs text-blue-700 font-medium mb-1">Bueno</div>
-            <div className="text-sm font-bold text-blue-600">0.5 - 1.0</div>
+            <div className="text-sm font-bold text-blue-600">16 - 25</div>
+            <div className="text-xs text-blue-600 mt-1">bugs/sprint</div>
           </div>
           <div className="p-3 bg-warning-50 rounded-lg">
             <div className="text-xs text-warning-700 font-medium mb-1">Mejorable</div>
-            <div className="text-sm font-bold text-warning-600">1.0 - 2.0</div>
+            <div className="text-sm font-bold text-warning-600">26 - 35</div>
+            <div className="text-xs text-warning-600 mt-1">bugs/sprint</div>
           </div>
           <div className="p-3 bg-danger-50 rounded-lg">
             <div className="text-xs text-danger-700 font-medium mb-1">Crítico</div>
-            <div className="text-sm font-bold text-danger-600">&gt; 2.0</div>
+            <div className="text-sm font-bold text-danger-600">&gt; 35</div>
+            <div className="text-xs text-danger-600 mt-1">bugs/sprint</div>
           </div>
         </div>
       </div>
       
       {/* Gráfico de tendencia */}
-      <TrendChart data={sparklineData} label="Evolución de Densidad de Defectos por Sprint" color="#754bde" sprints={sprints} yAxisLabel="Bugs por HU" />
+      <TrendChart data={sparklineData} label="Evolución de Bugs por Sprint" color="#f97316" sprints={sprints} yAxisLabel="Bugs" />
 
       {/* Recomendaciones al final */}
       <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
@@ -879,9 +884,27 @@ export default function DetailModal({ modal, onClose, recommendations }) {
           Acciones Recomendadas
         </h4>
         <ul className="space-y-2 text-sm text-orange-800">
-          {RecommendationEngine.getRecommendations('defectDensity', data, recommendations).map((rec, idx) => (
-            <li key={idx} dangerouslySetInnerHTML={{ __html: `${rec.icon} ${rec.text.includes(':') ? `<strong>${rec.text.split(':')[0]}:</strong>${rec.text.split(':').slice(1).join(':')}` : rec.text}` }} />
-          ))}
+          {data.avg > 30 && (
+            <>
+              <li>⚠️ <strong>Urgente:</strong> Analizar causas raíz de alta densidad de bugs. Revisar proceso de desarrollo y testing unitario.</li>
+              <li>🔍 <strong>Code Review:</strong> Implementar o reforzar revisiones de código antes de pasar a QA.</li>
+              <li>🧪 <strong>Testing Preventivo:</strong> Aumentar cobertura de unit tests y tests de integración en desarrollo.</li>
+            </>
+          )}
+          {data.avg > 20 && data.avg <= 30 && (
+            <>
+              <li>📊 <strong>Monitoreo:</strong> Identificar módulos o features con mayor densidad de bugs y enfocar mejoras.</li>
+              <li>🎯 <strong>Prevención:</strong> Establecer Definition of Done más estricta antes de pasar a QA.</li>
+              <li>🤝 <strong>Colaboración:</strong> Sesiones de pair programming en áreas complejas para reducir errores.</li>
+            </>
+          )}
+          {data.avg <= 20 && (
+            <>
+              <li>✅ <strong>Mantener:</strong> Continuar con las prácticas actuales que están dando buenos resultados.</li>
+              <li>📈 <strong>Optimizar:</strong> Buscar oportunidades de automatización para detectar bugs más temprano.</li>
+              <li>🎓 <strong>Compartir:</strong> Documentar y compartir buenas prácticas con el equipo.</li>
+            </>
+          )}
         </ul>
       </div>
     </div>
