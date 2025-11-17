@@ -1,4 +1,4 @@
-import { TrendingUp, TrendingDown, Info } from 'lucide-react';
+import { TrendingUp, TrendingDown, Info, ChevronRight, Construction } from 'lucide-react';
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 
@@ -10,10 +10,17 @@ export default function KPICard({
   status = 'neutral', 
   subtitle,
   formula,
-  tooltip
+  tooltip,
+  onClick,
+  detailData,
+  sparklineData,
+  isEstimated = false
 }) {
   const [showTooltip, setShowTooltip] = useState(false);
   const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
+  
+  const isClickable = onClick || detailData;
+  
   const getStatusStyles = () => {
     switch (status) {
       case 'success':
@@ -26,14 +33,21 @@ export default function KPICard({
         return 'border-gray-200 bg-white';
     }
   }
+  
   return (
-    <div className={`kpi-card relative ${getStatusStyles()}`}>
-      <div className="flex items-center justify-between mb-4">
+    <div 
+      className={`kpi-card relative ${getStatusStyles()} ${
+        isClickable ? 'cursor-pointer hover:-translate-y-1 hover:shadow-2xl transition-all duration-300' : ''
+      }`}
+      onClick={onClick}
+    >
+      <div className="flex items-center justify-between mb-2">
         {icon}
         <div className="relative">
           {tooltip && (
             <span
               className="ml-2 cursor-pointer"
+              onClick={(e) => e.stopPropagation()}
               onMouseEnter={e => {
                 const rect = e.currentTarget.getBoundingClientRect();
                 setTooltipPos({ x: rect.right + 8, y: rect.top });
@@ -41,7 +55,7 @@ export default function KPICard({
               }}
               onMouseLeave={() => setShowTooltip(false)}
             >
-              <Info className="w-4 h-4 text-gray-400 hover:text-blue-500" />
+              <Info className="w-3.5 h-3.5 text-gray-400 hover:text-blue-500" />
             </span>
           )}
           {tooltip && showTooltip && createPortal(
@@ -79,13 +93,27 @@ export default function KPICard({
           {trend !== 0 && `${trend > 0 ? '+' : ''}${trend}%`}
         </div>
       )}
-      <h3 className="metric-label mb-2">{title}</h3>
-      <div className="metric-value">{value}</div>
+      <div className="flex items-center justify-between mb-1">
+        <h3 className="metric-label">{title}</h3>
+        {isEstimated && (
+          <span className="inline-flex items-center text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full border border-orange-200">
+            <Construction className="w-3 h-3 mr-1" />
+            <span>*</span>
+          </span>
+        )}
+      </div>
+      <div className="metric-value">{value}{isEstimated && <span className="text-orange-500 ml-1">*</span>}</div>
       {formula && (
-        <div className="text-xs text-gray-400 mt-1">{formula}</div>
+        <div className="text-xs text-gray-400 mt-0.5">{formula}</div>
       )}
       {subtitle && (
-        <p className="text-sm text-gray-600 mt-2">{subtitle}</p>
+        <p className="text-xs text-gray-600 mt-1">{subtitle}</p>
+      )}
+      
+      {isClickable && (
+        <div className="absolute bottom-2 right-2 text-gray-400 hover:text-[#754bde] transition-colors">
+          <ChevronRight className="w-4 h-4" />
+        </div>
       )}
     </div>
   );

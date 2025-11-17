@@ -34,6 +34,16 @@ async function updateDataFromExcel() {
     fs.writeFileSync(outputPath, JSON.stringify(qaData, null, 2));
     console.log(`✓ Datos guardados en: ${outputPath}`);
     
+    // Guardar recomendaciones por separado si existen
+    if (qaData.recommendations && Object.keys(qaData.recommendations).length > 0) {
+      const recsPath = path.join(outputDir, 'recommendations.json');
+      fs.writeFileSync(recsPath, JSON.stringify(qaData.recommendations, null, 2));
+      console.log(`✓ Recomendaciones guardadas en: ${recsPath}`);
+      console.log(`📝 Métricas con recomendaciones: ${Object.keys(qaData.recommendations).join(', ')}`);
+    } else {
+      console.log('ℹ️  No se encontró hoja "Recomendaciones" en Excel, usando valores por defecto');
+    }
+    
     console.log('✅ Datos procesados y guardados');
     console.log(`📄 Total bugs: ${qaData.summary?.totalBugs || 0}`);
     console.log(`📈 Sprints: ${qaData.sprintData?.length || 0}`);

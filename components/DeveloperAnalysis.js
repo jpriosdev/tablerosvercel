@@ -6,7 +6,7 @@ export default function DeveloperAnalysis({ data }) {
     return (
       <div className="executive-card text-center p-8">
         <AlertCircle className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-        <p className="text-gray-600">No developer data available</p>
+        <p className="text-gray-600">No hay datos de desarrolladores disponibles</p>
       </div>
     );
   }

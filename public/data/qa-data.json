@@ -59,7 +59,7 @@
   },
   "developerData": [
     {
-      "name": "Andres Vergara",
+      "name": "Desarrollador 1",
       "assigned": 22,
       "resolved": 10,
       "pending": 8,
@@ -67,7 +67,7 @@
       "workload": "Alto"
     },
     {
-      "name": "Emiliano Fraile",
+      "name": "Desarrollador 2",
       "assigned": 7,
       "resolved": 0,
       "pending": 7,
@@ -75,7 +75,7 @@
       "workload": "Bajo"
     },
     {
-      "name": "Juan Camilo Collantes Tovar",
+      "name": "Desarrollador 3",
       "assigned": 19,
       "resolved": 8,
       "pending": 8,
@@ -83,7 +83,7 @@
       "workload": "Alto"
     },
     {
-      "name": "Juan Munoz",
+      "name": "Desarrollador 4",
       "assigned": 31,
       "resolved": 13,
       "pending": 18,
@@ -91,7 +91,7 @@
       "workload": "Alto"
     },
     {
-      "name": "Ludovic Hern",
+      "name": "Desarrollador 5",
       "assigned": 7,
       "resolved": 3,
       "pending": 4,
@@ -99,7 +99,7 @@
       "workload": "Bajo"
     },
     {
-      "name": "Nicolas Dubiansky",
+      "name": "Desarrollador 6",
       "assigned": 7,
       "resolved": 3,
       "pending": 1,
@@ -107,7 +107,7 @@
       "workload": "Bajo"
     },
     {
-      "name": "Sergio Ordaz Romero",
+      "name": "Desarrollador 7",
       "assigned": 12,
       "resolved": 2,
       "pending": 8,
@@ -123,7 +123,7 @@
       "workload": "Bajo"
     },
     {
-      "name": "Andres Vergara",
+      "name": "Desarrollador 1",
       "assigned": 0,
       "resolved": 0,
       "pending": 20,
@@ -131,7 +131,7 @@
       "workload": "Bajo"
     },
     {
-      "name": "Emiliano Fraile",
+      "name": "Desarrollador 2",
       "assigned": 0,
       "resolved": 0,
       "pending": 6,
@@ -139,7 +139,7 @@
       "workload": "Bajo"
     },
     {
-      "name": "Juan Camilo Collantes Tovar",
+      "name": "Desarrollador 3",
       "assigned": 0,
       "resolved": 0,
       "pending": 17,
@@ -147,7 +147,7 @@
       "workload": "Bajo"
     },
     {
-      "name": "Juan Munoz",
+      "name": "Desarrollador 4",
       "assigned": 0,
       "resolved": 0,
       "pending": 28,
@@ -155,7 +155,7 @@
       "workload": "Bajo"
     },
     {
-      "name": "Ludovic Hern",
+      "name": "Desarrollador 5",
       "assigned": 0,
       "resolved": 0,
       "pending": 6,
@@ -163,7 +163,7 @@
       "workload": "Bajo"
     },
     {
-      "name": "Nicolas Dubiansky",
+      "name": "Desarrollador 6",
       "assigned": 0,
       "resolved": 0,
       "pending": 6,
@@ -171,7 +171,7 @@
       "workload": "Bajo"
     },
     {
-      "name": "Sergio Ordaz Romero",
+      "name": "Desarrollador 7",
       "assigned": 0,
       "resolved": 0,
       "pending": 10,

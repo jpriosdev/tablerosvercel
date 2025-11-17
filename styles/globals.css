@@ -2,62 +2,135 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&display=swap');
 
 @layer base {
+  :root {
+    --primary: #754bde;
+    --primary-light: #ab98e5;
+    --primary-lighter: #d3c0ff;
+    --primary-dark: #3c1464;
+    --pale: #f8f6fd;
+    --cian: #5acdff;
+    --orange: #ff8700;
+    --orange-light: #ffb541;
+    --yellow: #ffd527;
+    --dark: #444;
+    --gray: #b2b2b2;
+    --gray-light: #e0e0e0;
+    --gray-light-2: #f2f2f2;
+    --gray-dark: #80868d;
+    --success: #3ae29b;
+    --warn: #f9bc46;
+    --error: #f1406b;
+    --black: #000;
+    --white: #fff;
+  }
+  
   html {
-    font-family: 'Inter', system-ui, sans-serif;
+    font-family: 'Sora', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   }
   
   body {
-    @apply bg-gray-50 text-gray-900;
+    @apply bg-gradient-to-br from-[#f8f6fd] via-white to-[#f8f6fd] text-[#444];
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Sora', sans-serif;
+    @apply font-semibold;
   }
 }
 
 @layer components {
   .executive-card {
-    @apply bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-all duration-200;
+    @apply bg-white rounded-2xl shadow-lg border border-[#e0e0e0] p-6 hover:shadow-xl hover:border-[#ab98e5] transition-all duration-300 backdrop-blur-sm;
   }
   
   .kpi-card {
-    @apply executive-card relative overflow-hidden;
+    @apply bg-white rounded-xl shadow-lg border border-[#e0e0e0] p-4 hover:shadow-xl hover:border-[#ab98e5] transition-all duration-300 backdrop-blur-sm relative overflow-hidden;
+    background: #ffffff;
   }
   
   .kpi-card::before {
     content: '';
-    @apply absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-executive-500 to-executive-600;
+    @apply absolute top-0 left-0 w-1 h-full rounded-l-xl;
+    background: #754bde;
+  }
+  
+  .kpi-card::after {
+    content: '';
+    @apply absolute -right-10 -top-10 w-24 h-24 rounded-full opacity-5;
+    background: #754bde;
   }
   
   .metric-value {
-    @apply text-3xl font-bold mb-2;
+    @apply text-2xl font-bold mb-1;
   }
   
   .metric-label {
-    @apply text-sm text-gray-600 font-medium;
+    @apply text-xs text-gray-600 font-medium;
   }
   
   .status-success {
-    @apply text-success-600 bg-success-50 border-success-200;
+    @apply bg-[#3ae29b]/10 border-[#3ae29b] shadow-sm;
+    color: #1a9b5f;
   }
   
   .status-warning {
-    @apply text-warning-600 bg-warning-50 border-warning-200;
+    @apply bg-[#f9bc46]/10 border-[#f9bc46] shadow-sm;
+    color: #b87f0d;
   }
   
   .status-danger {
-    @apply text-danger-600 bg-danger-50 border-danger-200;
+    @apply bg-[#f1406b]/10 border-[#f1406b] shadow-sm;
+    color: #c91648;
   }
   
   .chart-container {
-    @apply relative w-full h-64;
+    @apply relative w-full h-64 bg-white/50 backdrop-blur-sm rounded-xl p-4 shadow-sm;
   }
   
   .progress-bar {
-    @apply bg-gray-200 rounded-full overflow-hidden;
+    @apply bg-[#e0e0e0] rounded-full overflow-hidden shadow-inner;
   }
   
   .progress-fill {
     @apply h-full transition-all duration-1000 ease-out;
+    background: #754bde;
+  }
+  
+  /* Hover effects for cards */
+  .hover-lift {
+    @apply transition-all duration-300 hover:-translate-y-1 hover:shadow-xl;
+  }
+  
+  /* Gradient text utilities */
+  .text-gradient-primary {
+    @apply text-[#754bde];
+  }
+  
+  /* Badge styles */
+  .badge-primary {
+    @apply inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold text-white shadow-sm;
+    background: #754bde;
+  }
+  
+  .badge-success {
+    @apply inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold text-white shadow-sm;
+    background: #3ae29b;
+  }
+  
+  /* Sparkline styles */
+  .sparkline {
+    @apply w-full;
+  }
+  
+  .sparkline-dot {
+    transition: r 0.2s ease;
+  }
+  
+  .sparkline-dot:hover {
+    r: 4;
   }
 }
 
@@ -71,19 +144,33 @@
 }
 
 ::-webkit-scrollbar {
-  width: 6px;
+  width: 8px;
+  height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  @apply bg-gray-100;
+  background: #f2f2f2;
+  border-radius: 10px;
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-gray-400 rounded-full;
+  background: #754bde;
+  border-radius: 10px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  @apply bg-gray-500;
+  background: #3c1464;
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Selection color */
+::selection {
+  background: #d3c0ff;
+  color: #3c1464;
 }
 /* Añade estos estilos a tu CSS existente */
 

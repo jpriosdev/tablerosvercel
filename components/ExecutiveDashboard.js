@@ -24,6 +24,9 @@ import DeveloperAnalysis from './DeveloperAnalysis';
 import ModuleAnalysis from './ModuleAnalysis';
 import ExecutiveRecommendations from './ExecutiveRecommendations';
 import QualityMetrics from './QualityMetrics';
+import DetailModal from './DetailModal';
+import SprintComparison from './SprintComparison';
+import ActionableRecommendations from './ActionableRecommendations';
 import { QADataProcessor } from '../utils/dataProcessor'; // Nueva importación
 
 export default function ExecutiveDashboard({ 
@@ -36,7 +39,6 @@ export default function ExecutiveDashboard({
   // Nuevas props para modo paramétrico
   dataSource = '/api/qa-data',
   configSource = '/api/config',
-  enableParametricMode = false,
   refreshInterval = 300000
 }) {
   // Estados originales
@@ -49,19 +51,24 @@ export default function ExecutiveDashboard({
   const [parametricLoading, setParametricLoading] = useState(false);
   const [parametricLastUpdated, setParametricLastUpdated] = useState(null);
   const [error, setError] = useState(null);
+  const [recommendations, setRecommendations] = useState(null);
+  const [useParametricMode, setUseParametricMode] = useState(false);
 
   // Determinar qué datos usar
-  const isParametricMode = enableParametricMode && !externalData;
+  const isParametricMode = useParametricMode && !externalData;
   const currentData = isParametricMode ? parametricData : externalData;
   const currentLoading = isParametricMode ? parametricLoading : externalLoading;
   const currentLastUpdated = isParametricMode ? parametricLastUpdated : externalLastUpdated;
 
   // Cargar configuración para modo paramétrico
   useEffect(() => {
-    if (isParametricMode) {
-      loadConfiguration();
-    }
-  }, [isParametricMode, configSource]);
+    loadConfiguration();
+  }, [configSource]);
+
+  // Cargar recomendaciones al montar
+  useEffect(() => {
+    loadRecommendations();
+  }, []);
 
   // Auto-refresh mejorado
   useEffect(() => {
@@ -91,9 +98,22 @@ export default function ExecutiveDashboard({
       if (!response.ok) throw new Error('Config not found');
       const configData = await response.json();
       setConfig(configData);
+      
+      // Aplicar configuración de auto-refresh si existe
+      if (configData.autoRefresh !== undefined) {
+        setAutoRefresh(configData.autoRefresh);
+      }
+      
+      // Aplicar configuración de modo paramétrico si existe
+      if (configData.useParametricMode !== undefined) {
+        setUseParametricMode(configData.useParametricMode);
+      }
     } catch (error) {
       console.warn('Using default configuration:', error);
       setConfig({
+        autoRefresh: true,
+        refreshInterval: 300000,
+        useParametricMode: true,
         weights: {
           resolutionRate: 0.3,
           testCoverage: 0.25,
@@ -129,6 +149,22 @@ export default function ExecutiveDashboard({
       setError(error.message);
     } finally {
       setParametricLoading(false);
+    }
+  };
+
+  const loadRecommendations = async () => {
+    try {
+      const response = await fetch('/api/recommendations');
+      if (response.ok) {
+        const data = await response.json();
+        setRecommendations(data);
+        console.log('✅ Recomendaciones cargadas desde archivo');
+      } else {
+        console.warn('No se pudieron cargar recomendaciones, usando valores por defecto');
+      }
+    } catch (error) {
+      console.warn('Error al cargar recomendaciones:', error);
+      // No establecer error porque las recomendaciones son opcionales
     }
   };
 
@@ -170,54 +206,60 @@ export default function ExecutiveDashboard({
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 font-executive">
-      {/* Header mejorado */}
-      <div className="bg-white shadow-sm border-b border-gray-200">
+    <div className="min-h-screen bg-gradient-to-br from-[#f8f6fd] via-white to-[#f8f6fd]">
+      {/* Header mejorado con branding */}
+      <div className="bg-white/90 backdrop-blur-md shadow-lg border-b sticky top-0 z-40" style={{ borderColor: '#e0e0e0' }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div>
-              <div className="flex items-center space-x-3">
-                <h1 className="text-2xl font-bold text-gray-900">
-                  Dashboard Ejecutivo QA
-                </h1>
-                {/* Modo Paramétrico - Oculto temporalmente */}
-                {false && isParametricMode && (
-                  <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full">
-                    Modo Paramétrico
-                  </span>
-                )}
+          <div className="flex items-center justify-between h-20">
+            {/* Logo y Título */}
+            <div className="flex items-center space-x-6">
+              {/* Logo Tiendas 3B */}
+              <div className="flex-shrink-0">
+                <img 
+                  src="/logo-3b.jpg" 
+                  alt="Tiendas 3B" 
+                  className="h-16 w-auto"
+                />
               </div>
-              <p className="text-sm text-gray-500">
-                Control de Calidad y Trazabilidad del Proceso de Pruebas
-              </p>
+              
+              {/* Separador */}
+              <div className="hidden md:block h-12 w-px bg-gradient-to-b from-transparent via-slate-300 to-transparent"></div>
+              
+              {/* Título */}
+              <div>
+                <div className="flex items-center space-x-3">
+                  <h1 className="text-2xl font-bold" style={{ color: '#754bde' }}>
+                    Dashboard Ejecutivo QA
+                  </h1>
+                  {/* Modo Paramétrico - Oculto temporalmente */}
+                  {false && isParametricMode && (
+                    <span className="px-3 py-1 bg-gradient-to-r from-blue-500 to-blue-600 text-white text-xs font-semibold rounded-full shadow-sm">
+                      Modo Paramétrico
+                    </span>
+                  )}
+                </div>
+                <p className="text-sm font-medium mt-0.5" style={{ color: '#80868d' }}>
+                  Control de Calidad y Trazabilidad del Proceso de Pruebas
+                </p>
+              </div>
             </div>
             
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-6">
               {/* Indicador de error */}
               {error && (
-                <div className="flex items-center text-red-600">
-                  <AlertTriangle className="w-4 h-4 mr-1" />
-                  <span className="text-xs">Error de conexión</span>
+                <div className="flex items-center px-3 py-1.5 bg-red-50 border border-red-200 rounded-lg text-red-700">
+                  <AlertTriangle className="w-4 h-4 mr-2" />
+                  <span className="text-xs font-medium">Error de conexión</span>
                 </div>
               )}
               
-              <div className="text-right">
-                <p className="text-sm text-gray-500">Último incidente reportado</p>
-                <p className="text-sm font-medium text-gray-900">
+              {/* Última actualización */}
+              <div className="text-right hidden sm:block">
+                <p className="text-xs text-slate-500 font-medium">Último incidente reportado</p>
+                <p className="text-sm font-semibold text-slate-900 mt-0.5">
                   {currentLastUpdated ? format(currentLastUpdated, 'dd/MM/yyyy HH:mm', { locale: es }) : 'Sin reportar'}
                 </p>
               </div>
-              
-              <button
-                onClick={() => setAutoRefresh(!autoRefresh)}
-                className={`px-3 py-1 text-xs rounded-full border ${
-                  autoRefresh 
-                    ? 'bg-green-50 text-green-700 border-green-200' 
-                    : 'bg-gray-50 text-gray-700 border-gray-200'
-                }`}
-              >
-                Auto: {autoRefresh ? 'ON' : 'OFF'}
-              </button>
               
               <button
                 onClick={handleRefresh}
@@ -267,23 +309,31 @@ export default function ExecutiveDashboard({
         </div>
       )}
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {/* Navegación por tabs */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Navegación por tabs con estilo moderno */}
         <div className="mb-8">
-          <div className="border-b border-gray-200">
-            <nav className="-mb-px flex space-x-8">
+          <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-2 shadow-sm border" style={{ borderColor: '#e0e0e0' }}>
+            <nav className="flex space-x-2">
               {tabs.map((tab) => (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
+                  className={`flex items-center px-6 py-3 rounded-xl font-semibold text-sm transition-all duration-300 ${
                     activeTab === tab.id
-                      ? 'border-executive-500 text-executive-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                      ? 'text-white shadow-lg'
+                      : 'hover:bg-[#f8f6fd]'
                   }`}
+                  style={activeTab === tab.id ? {
+                    background: '#754bde',
+                    boxShadow: '0 10px 25px -5px rgba(117, 75, 222, 0.3)'
+                  } : { color: '#80868d' }}
                 >
-                  {tab.icon}
-                  <span className="ml-2">{tab.label}</span>
+                  <span className={`mr-2 ${
+                    activeTab === tab.id ? 'text-white' : ''
+                  }`} style={activeTab === tab.id ? {} : { color: '#b2b2b2' }}>
+                    {tab.icon}
+                  </span>
+                  <span>{tab.label}</span>
                 </button>
               ))}
             </nav>
@@ -292,7 +342,7 @@ export default function ExecutiveDashboard({
 
         {/* Contenido por tabs */}
         <div className="animate-fade-in">
-          {activeTab === 'overview' && <OverviewTab data={currentData} />}
+          {activeTab === 'overview' && <OverviewTab data={currentData} recommendations={recommendations} />}
           {activeTab === 'quality' && <QualityTab data={currentData} />}
           {activeTab === 'teams' && <TeamsTab data={currentData} />}
           {activeTab === 'trends' && <TrendsTab data={currentData} />}
@@ -307,10 +357,11 @@ export default function ExecutiveDashboard({
 // COMPONENTES DE TABS (mantén los existentes)
 // ===============================
 
-function OverviewTab({ data }) {
+function OverviewTab({ data, recommendations }) {
   const { kpis, summary } = data;
   const sprintList = data.sprintData?.map(s => s.sprint || s.name || s.id) || [];
   const [selectedSprints, setSelectedSprints] = React.useState(['Todos']);
+  const [detailModal, setDetailModal] = React.useState(null);
 
   // Filtro de sprints con checkboxes
   const handleSprintToggle = (sprint) => {
@@ -407,6 +458,147 @@ function OverviewTab({ data }) {
   });
   const criticalBugsTrend = calculateTrend(s => s.bugs || s.bugsFound || 0) * -1; // Invertido porque menos bugs es mejor
 
+  // NUEVAS MÉTRICAS ESTRATÉGICAS
+  
+  // 1. Cycle Time: Tiempo promedio de resolución de bugs
+  const calculateCycleTime = () => {
+    if (!filteredSprintData || filteredSprintData.length === 0) return { avg: 0, byPriority: {} };
+    
+    // Usar valor real de qualityMetrics.cycleTime si existe
+    const realCycleTime = data.qualityMetrics?.cycleTime || null;
+    
+    let avgCycleTime;
+    if (realCycleTime !== null) {
+      // Usar dato real del JSON
+      avgCycleTime = realCycleTime;
+    } else {
+      // Fallback: Estimación basada en eficiencia de resolución
+      const sprintDays = 14;
+      const avgEfficiency = filteredSprintData.reduce((acc, s) => {
+        const total = s.bugs || s.bugsFound || 0;
+        const resolved = s.bugsResolved || s.bugsClosed || 0;
+        return acc + (total > 0 ? resolved / total : 0);
+      }, 0) / filteredSprintData.length;
+      
+      avgCycleTime = Math.round(sprintDays * (1 - avgEfficiency * 0.5));
+    }
+    
+    return {
+      avg: avgCycleTime,
+      byPriority: {
+        critical: Math.round(avgCycleTime * 0.6), // Críticos se resuelven más rápido
+        high: Math.round(avgCycleTime * 0.8),
+        medium: avgCycleTime,
+        low: Math.round(avgCycleTime * 1.5)
+      }
+    };
+  };
+  
+  const cycleTimeData = calculateCycleTime();
+  
+  // Cobertura de Automatización de Pruebas (para ficha 7)
+  const calculateAutomationCoverage = () => {
+    if (!filteredSprintData || filteredSprintData.length === 0) return { coverage: 0, automated: 0, manual: 0, trend: [] };
+    
+    const avgCoverage = filteredSprintData.reduce((acc, sprint) => {
+      const totalTests = sprint.testCases || 0;
+      const velocityFactor = (sprint.velocity || 15) / 20;
+      const estimatedAutomated = Math.round(totalTests * (0.35 + velocityFactor * 0.25));
+      const coveragePercent = totalTests > 0 ? (estimatedAutomated / totalTests) * 100 : 0;
+      return acc + coveragePercent;
+    }, 0) / filteredSprintData.length;
+    
+    const lastSprint = filteredSprintData[filteredSprintData.length - 1] || {};
+    const totalTests = lastSprint.testCases || 0;
+    const velocityFactor = (lastSprint.velocity || 15) / 20;
+    const automatedTests = Math.round(totalTests * (0.35 + velocityFactor * 0.25));
+    const manualTests = totalTests - automatedTests;
+    
+    return {
+      coverage: Math.round(avgCoverage),
+      automated: automatedTests,
+      manual: manualTests,
+      total: totalTests,
+      trend: filteredSprintData.map(s => {
+        const total = s.testCases || 0;
+        const vFactor = (s.velocity || 15) / 20;
+        const auto = Math.round(total * (0.35 + vFactor * 0.25));
+        return total > 0 ? Math.round((auto / total) * 100) : 0;
+      })
+    };
+  };
+  
+  const automationData = calculateAutomationCoverage();
+  
+  // 2. Defect Density: Densidad de defectos por sprint (datos reales)
+  const calculateDefectDensityPerSprint = () => {
+    if (!filteredSprintData || filteredSprintData.length === 0) return { avg: 0, total: 0, max: 0, min: 0 };
+    
+    // Usar datos reales de bugs por sprint
+    const bugsPerSprint = filteredSprintData.map(s => s.bugs || 0);
+    const totalBugsInSprints = bugsPerSprint.reduce((acc, bugs) => acc + bugs, 0);
+    const avgBugsPerSprint = totalBugsInSprints / filteredSprintData.length;
+    const maxBugs = Math.max(...bugsPerSprint);
+    const minBugs = Math.min(...bugsPerSprint);
+    
+    return {
+      avg: Math.round(avgBugsPerSprint * 10) / 10, // Redondear a 1 decimal
+      total: totalBugsInSprints,
+      max: maxBugs,
+      min: minBugs,
+      sprints: filteredSprintData.length
+    };
+  };
+  
+  const defectDensityData = calculateDefectDensityPerSprint();
+
+  // Calcular datos de sparkline para cada métrica
+  const getSparklineData = (metric) => {
+    if (!filteredSprintData || filteredSprintData.length === 0) return [];
+    
+    return filteredSprintData.map(sprint => {
+      switch(metric) {
+        case 'testCases':
+          return sprint.testCases || sprint.testCasesExecuted || 0;
+        case 'resolutionEfficiency':
+          const total = sprint.bugs || sprint.bugsFound || 0;
+          const resolved = sprint.bugsResolved || sprint.bugsClosed || 0;
+          return total > 0 ? Math.round((resolved / total) * 100) : 0;
+        case 'automationCoverage':
+          const totalTests = sprint.testCases || 0;
+          const velocityFactor = (sprint.velocity || 15) / 20;
+          const automated = Math.round(totalTests * (0.35 + velocityFactor * 0.25));
+          return totalTests > 0 ? Math.round((automated / totalTests) * 100) : 0;
+        case 'criticalBugs':
+          // Si existe el dato directo, usarlo
+          if (sprint.criticalBugs !== undefined) {
+            return sprint.criticalBugs;
+          }
+          // Si no, estimar basado en proporción de bugs totales
+          // Asumiendo ~35% de bugs son críticos (Más alta + Alta)
+          const sprintBugs = sprint.bugs || 0;
+          return Math.round(sprintBugs * 0.35);
+        case 'criticalBugsPending':
+          // Si existe el dato directo, usarlo
+          if (sprint.criticalBugsPending !== undefined) {
+            return sprint.criticalBugsPending;
+          }
+          // Si no, estimar basado en bugs pendientes
+          const pending = sprint.bugsPending || 0;
+          return Math.round(pending * 0.35);
+        case 'cycleTime':
+          const eff = sprint.resolutionEfficiency || 70;
+          return Math.round(15 - (eff / 10));
+        case 'defectDensity':
+          const bugs = sprint.bugs || 0;
+          const hus = 6; // Estimado
+          return parseFloat((bugs / hus).toFixed(2));
+        default:
+          return 0;
+      }
+    });
+  };
+
   return (
     <div className="space-y-8">
       {/* Filtro de Sprints con Checkboxes */}
@@ -484,91 +676,202 @@ function OverviewTab({ data }) {
         </p>
       </div>
 
-      {/* KPIs Principales con datos mejorados */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      {/* Primera fila - Métricas principales */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* 1. COBERTURA: Media de Casos */}
         <KPICard
-          title="Media Casos Ejecutados por Sprint"
+          title="Media de Casos Ejecutados por Sprint"
           value={avgTestCasesPerSprint}
-          icon={<Activity className="w-8 h-8 text-blue-600" />}
+          icon={<Activity className="w-6 h-6 text-blue-600" />}
           trend={testCasesTrend}
-          status={avgTestCasesPerSprint >= 200 ? "success" : "warning"}
+          status={avgTestCasesPerSprint >= 170 ? "success" : "warning"}
           subtitle={`${totalTestCases} casos ejecutados total`}
           formula={`Media = ${totalTestCases} / ${filteredSprintData?.length || 1}`}
-          tooltip={"La media de casos ejecutados por sprint indica la cantidad promedio de pruebas realizadas en cada ciclo. Es útil para evaluar la productividad y la cobertura de pruebas en el tiempo. Un valor alto sugiere buen ritmo de ejecución y control de calidad."}
+          tooltip={"La media de casos ejecutados por sprint indica la cantidad promedio de pruebas realizadas en cada ciclo. Es útil para evaluar la productividad y la cobertura de pruebas en el tiempo."}
+          onClick={() => setDetailModal({
+            type: 'testCases',
+            title: 'Análisis de Casos de Prueba Ejecutados',
+            data: {
+              avg: avgTestCasesPerSprint,
+              total: totalTestCases,
+              sprints: filteredSprintData?.length || 0
+            },
+            sparklineData: getSparklineData('testCases'),
+            sprints: filteredSprintData
+          })}
+          detailData={{ avg: avgTestCasesPerSprint, total: totalTestCases }}
         />
         
+        {/* 2. CALIDAD DEL PRODUCTO: Densidad de Defectos */}
+        <KPICard
+          title="Densidad de Defectos por Sprint"
+          value={defectDensityData.avg}
+          icon={<Target className="w-6 h-6 text-orange-600" />}
+          trend={defectDensityData.avg <= 20 ? 5 : -5}
+          status={defectDensityData.avg <= 20 ? "success" : defectDensityData.avg <= 30 ? "warning" : "danger"}
+          subtitle={`Máx: ${defectDensityData.max} | Mín: ${defectDensityData.min} bugs/sprint`}
+          formula={`Promedio = ${defectDensityData.total} bugs / ${defectDensityData.sprints} sprints`}
+          tooltip={"Densidad de Defectos por Sprint: Promedio de bugs detectados por sprint. Objetivo: ≤20 bugs/sprint indica buena calidad. >30 requiere revisión de procesos de desarrollo y testing."}
+          onClick={() => setDetailModal({
+            type: 'defectDensity',
+            title: 'Análisis de Densidad de Defectos por Sprint',
+            data: defectDensityData,
+            sparklineData: getSparklineData('defectDensity'),
+            sprints: filteredSprintData
+          })}
+          detailData={defectDensityData}
+        />
+        
+        {/* 3. VELOCIDAD: Tiempo Promedio de Resolución */}
+        <KPICard
+          title="Tiempo Promedio de Resolución"
+          value={`${cycleTimeData.avg} días`}
+          icon={<Clock className="w-6 h-6 text-executive-600" />}
+          trend={cycleTimeData.avg <= 7 ? 10 : -10}
+          status={cycleTimeData.avg <= 7 ? "success" : cycleTimeData.avg <= 10 ? "warning" : "danger"}
+          subtitle={`Críticos: ${cycleTimeData.byPriority.critical}d | Altos: ${cycleTimeData.byPriority.high}d`}
+          formula={`Basado en eficiencia: ${resolutionEfficiency}%`}
+          tooltip={"Tiempo de Ciclo: Tiempo promedio desde la detección hasta la resolución de bugs. Métrica clave para medir la velocidad de respuesta del equipo. Objetivo: ≤7 días para mantener agilidad."}
+          onClick={() => setDetailModal({
+            type: 'cycleTime',
+            title: 'Análisis Detallado de Tiempo de Resolución',
+            data: cycleTimeData,
+            sparklineData: getSparklineData('cycleTime'),
+            sprints: filteredSprintData
+          })}
+          detailData={cycleTimeData}
+        />
+      </div>
+
+      {/* Segunda fila - Métricas de seguimiento */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* 1. RIESGO CRÍTICO: Bugs Críticos Detectados */}
+        <KPICard
+          title="Bugs Críticos Detectados"
+          value={criticalBugsTotal}
+          icon={<Bug className="w-6 h-6 text-danger-600" />}
+          trend={criticalBugsTrend}
+          status={criticalBugsTotal <= 20 ? "success" : "danger"}
+          subtitle={`${Math.round((criticalBugsTotal / totalBugs) * 100)}% del total de bugs`}
+          formula={`Críticos = Más alta (${criticalBugsMasAlta}) + Alta (${criticalBugsAlta})`}
+          tooltip={"Total de bugs críticos detectados con prioridad 'Más alta' y 'Alta'. Indica el volumen de incidencias graves que requieren atención inmediata."}
+          onClick={() => setDetailModal({
+            type: 'criticalBugs',
+            title: 'Análisis de Bugs Críticos Detectados',
+            data: {
+              total: criticalBugsTotal,
+              highest: criticalBugsMasAlta,
+              high: criticalBugsAlta,
+              totalBugs: totalBugs,
+              allPriorities: data.bugsByPriority
+            },
+            sparklineData: getSparklineData('criticalBugs'),
+            sprints: filteredSprintData
+          })}
+          detailData={{ total: criticalBugsTotal }}
+        />
+        
+        {/* 2. SEGUIMIENTO CRÍTICO: Estado de Bugs Críticos */}
+        <KPICard
+          title="Estado Bugs Críticos"
+          value={`${criticalBugsPending}`}
+          icon={<AlertTriangle className="w-6 h-6 text-warning-600" />}
+          trend={criticalBugsTrend}
+          status={criticalBugsPending <= 10 ? "success" : "danger"}
+          subtitle={`${criticalBugsTotal - criticalBugsPending} resueltos de ${criticalBugsTotal} críticos`}
+          formula={`Pendientes = ${criticalBugsPending} | Resueltos = ${criticalBugsTotal - criticalBugsPending}`}
+          tooltip={"Estado de los bugs críticos: muestra cuántos están pendientes y cuántos ya fueron resueltos. Los pendientes requieren atención inmediata para no bloquear releases."}
+          onClick={() => setDetailModal({
+            type: 'criticalBugsStatus',
+            title: 'Estado de Bugs Críticos',
+            data: {
+              total: criticalBugsTotal,
+              pending: criticalBugsPending,
+              resolved: criticalBugsTotal - criticalBugsPending,
+              allPriorities: data.bugsByPriority,
+              masAlta: criticalBugsMasAlta,
+              alta: criticalBugsAlta
+            },
+            sparklineData: getSparklineData('criticalBugsPending'),
+            sprints: filteredSprintData
+          })}
+          detailData={{ pending: criticalBugsPending }}
+        />
+        
+        {/* 3. EFICIENCIA: Eficiencia de Resolución */}
         <KPICard
           title="Eficiencia de Resolución"
           value={`${resolutionEfficiency}%`}
-          icon={<CheckCircle className="w-8 h-8 text-success-600" />}
+          icon={<CheckCircle className="w-6 h-6 text-success-600" />}
           trend={resolutionTrend}
           status={resolutionEfficiency >= 70 ? "success" : "warning"}
           subtitle={`${bugsClosed} resueltos de ${totalBugs} total (${totalBugs - bugsClosed} abiertos)`}
           formula={`Eficiencia = ${bugsClosed} / ${totalBugs} × 100`}
           tooltip={"La eficiencia de resolución mide el porcentaje de bugs solucionados respecto al total reportado. Es clave para evaluar la capacidad del equipo de cerrar incidencias y mantener la calidad del producto."}
-        />
-        
-        <KPICard
-          title="Bugs Críticos Detectados"
-          value={criticalBugsTotal}
-          icon={<Bug className="w-8 h-8 text-danger-600" />}
-          trend={criticalBugsTrend}
-          status={criticalBugsTotal <= 20 ? "success" : "danger"}
-          subtitle={`${Math.round((criticalBugsTotal / totalBugs) * 100)}% del total de bugs`}
-          formula={`Críticos = Más alta (${criticalBugsMasAlta}) + Alta (${criticalBugsAlta})`}
-          tooltip={"Total de bugs críticos detectados con prioridad 'Más alta' y 'Alta'. Indica el volumen de incidencias graves que requieren atención."}
-        />
-        
-        <KPICard
-          title="Estado Bugs Críticos"
-          value={`${criticalBugsPending}`}
-          icon={<AlertTriangle className="w-8 h-8 text-warning-600" />}
-          trend={criticalBugsTrend}
-          status={criticalBugsPending <= 10 ? "success" : "danger"}
-          subtitle={`${criticalBugsTotal - criticalBugsPending} resueltos de ${criticalBugsTotal} críticos`}
-          formula={`Pendientes = ${criticalBugsPending} | Resueltos = ${criticalBugsTotal - criticalBugsPending}`}
-          tooltip={"Estado de los bugs críticos: muestra cuántos están pendientes y cuántos ya fueron resueltos. Los pendientes requieren atención inmediata."}
+          onClick={() => setDetailModal({
+            type: 'resolutionEfficiency',
+            title: 'Análisis de Eficiencia de Resolución',
+            data: {
+              efficiency: resolutionEfficiency,
+              total: totalBugs,
+              resolved: bugsClosed,
+              pending: totalBugs - bugsClosed
+            },
+            sparklineData: getSparklineData('resolutionEfficiency'),
+            sprints: filteredSprintData
+          })}
+          detailData={{ efficiency: resolutionEfficiency }}
         />
       </div>
 
+      {/* Comparación Sprint-over-Sprint */}
+      <SprintComparison data={data} filteredSprintData={filteredSprintData} />
+
       {/* Segunda fila de métricas adicionales */}
-      {kpis.averageResolutionTime && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Ficha 7: Cobertura de Automatización */}
+        <KPICard
+          title="Cobertura de Automatización"
+          value={`${automationData.coverage}%`}
+          icon={<Settings className="w-6 h-6 text-purple-600" />}
+          trend={automationData.coverage >= 60 ? 10 : automationData.coverage >= 40 ? 5 : -5}
+          status={automationData.coverage >= 60 ? "success" : automationData.coverage >= 40 ? "warning" : "danger"}
+          subtitle={`${automationData.automated} automatizados | ${automationData.manual} manuales`}
+          tooltip={"Cobertura de Automatización: Porcentaje de casos de prueba automatizados respecto al total. Objetivo: ≥60% para eficiencia y ≥80% para madurez óptima."}
+          onClick={() => setDetailModal({
+            type: 'automationCoverage',
+            title: 'Análisis de Cobertura de Automatización',
+            data: automationData,
+            sparklineData: getSparklineData('automationCoverage'),
+            sprints: filteredSprintData
+          })}
+          isEstimated={true}
+        />
+        
+        {kpis.testExecutionRate && (
           <KPICard
-            title="Tiempo Promedio de Resolución"
-            value={`${kpis.averageResolutionTime} días`}
-            icon={<Clock className="w-8 h-8 text-blue-600" />}
+            title="Tasa de Ejecución"
+            value={`${kpis.testExecutionRate}%`}
+            icon={<Activity className="w-6 h-6 text-purple-600" />}
             trend={0}
             status="info"
-            subtitle="Tiempo promedio"
-            tooltip={"El tiempo promedio de resolución mide cuántos días tarda en cerrarse un bug desde su reporte. Es clave para evaluar la velocidad de respuesta del equipo."}
+            subtitle="Pruebas ejecutadas"
+            tooltip={"La tasa de ejecución muestra el porcentaje de casos de prueba ejecutados respecto al total planificado. Indica el nivel de cobertura alcanzado."}
           />
-          
-          {kpis.testExecutionRate && (
-            <KPICard
-              title="Tasa de Ejecución"
-              value={`${kpis.testExecutionRate}%`}
-              icon={<Activity className="w-8 h-8 text-purple-600" />}
-              trend={0}
-              status="info"
-              subtitle="Pruebas ejecutadas"
-              tooltip={"La tasa de ejecución muestra el porcentaje de casos de prueba ejecutados respecto al total planificado. Indica el nivel de cobertura alcanzado."}
-            />
-          )}
-          
-          {kpis.bugLeakageRate !== undefined && (
-            <KPICard
-              title="Tasa de Fuga"
-              value={`${kpis.bugLeakageRate}%`}
-              icon={<TrendingUp className="w-8 h-8 text-red-600" />}
-              trend={0}
-              status={kpis.bugLeakageRate <= 5 ? "success" : "danger"}
-              subtitle="Bugs en producción"
-              tooltip={"La tasa de fuga mide el porcentaje de bugs que escaparon a producción. Un valor bajo indica buena calidad de pruebas pre-producción."}
-            />
-          )}
-        </div>
-      )}
+        )}
+        
+        {kpis.bugLeakageRate !== undefined && (
+          <KPICard
+            title="Tasa de Fuga"
+            value={`${kpis.bugLeakageRate}%`}
+            icon={<TrendingUp className="w-6 h-6 text-red-600" />}
+            trend={0}
+            status={kpis.bugLeakageRate <= 5 ? "success" : "danger"}
+            subtitle="Bugs en producción"
+            tooltip={"La tasa de fuga mide el porcentaje de bugs que escaparon a producción. Un valor bajo indica buena calidad de pruebas pre-producción."}
+          />
+        )}
+      </div>
 
       {/* Gráficos principales filtrados */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -587,6 +890,14 @@ function OverviewTab({ data }) {
         </div>
       </div>
 
+      {/* Comparativa Sprint a Sprint */}
+      {filteredSprintData && filteredSprintData.length >= 2 && (
+        <SprintComparison 
+          sprintData={filteredSprintData} 
+          selectedSprints={selectedSprints}
+        />
+      )}
+
       {/* Resumen de módulos críticos */}
       {data.moduleData && (
         <div className="executive-card">
@@ -596,6 +907,16 @@ function OverviewTab({ data }) {
           <ModuleAnalysis data={data.moduleData} />
         </div>
       )}
+
+      {/* Recomendaciones Accionables */}
+      <ActionableRecommendations data={data} filteredSprintData={filteredSprintData} />
+
+      {/* Modal de detalles */}
+      <DetailModal 
+        modal={detailModal} 
+        onClose={() => setDetailModal(null)} 
+        recommendations={recommendations || data?.recommendations || {}}
+      />
     </div>
   );
 }

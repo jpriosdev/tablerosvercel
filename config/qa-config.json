@@ -1,4 +1,7 @@
 {
+  "autoRefresh": true,
+  "refreshInterval": 300000,
+  "useParametricMode": true,
   "weights": {
     "resolutionRate": 0.3,
     "testCoverage": 0.25,
