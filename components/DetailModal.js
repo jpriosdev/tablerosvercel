@@ -1,0 +1,1666 @@
+// components/DetailModal.js
+import React from 'react';
+import { X, TrendingUp, TrendingDown, AlertCircle, CheckCircle, BarChart3, Info, Target, Activity, Users, AlertTriangle } from 'lucide-react';
+import { RecommendationEngine } from '../utils/recommendationEngine';
+import { Line } from 'react-chartjs-2';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler
+} from 'chart.js';
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler
+);
+
+export default function DetailModal({ modal, onClose, recommendations }) {
+  if (!modal) return null;
+
+  const { type, title, data, sparklineData, sprints } = modal;
+
+  // Componente de gráfico de líneas usando Chart.js
+  const TrendChart = ({ data: chartData, label, color = '#754bde', sprints, yAxisLabel = 'Valor' }) => {
+    if (!chartData || chartData.length === 0) return null;
+    
+    const labels = sprints ? sprints.map(s => s.sprint || s.name || 'Sprint') : chartData.map((_, idx) => `Sprint ${idx + 1}`);
+    
+    const chartConfig = {
+      labels: labels,
+      datasets: [
+        {
+          label: yAxisLabel,
+          data: chartData,
+          borderColor: color,
+          backgroundColor: color,
+          tension: 0.4,
+          fill: false,
+          pointRadius: 5,
+          pointHoverRadius: 7,
+          pointBackgroundColor: '#ffffff',
+          pointBorderColor: color,
+          pointBorderWidth: 2.5,
+          borderWidth: 2.5,
+        }
+      ],
+    };
+
+    const options = {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: {
+        mode: 'index',
+        intersect: false,
+      },
+      plugins: {
+        legend: {
+          display: false,
+        },
+        title: {
+          display: true,
+          text: label,
+          font: {
+            size: 14,
+            weight: 'bold',
+          },
+          padding: {
+            bottom: 15
+          }
+        },
+        tooltip: {
+          backgroundColor: 'rgba(0, 0, 0, 0.8)',
+          padding: 12,
+          cornerRadius: 8,
+          titleFont: {
+            size: 13,
+            weight: 'bold'
+          },
+          bodyFont: {
+            size: 12
+          },
+          callbacks: {
+            title: function(context) {
+              return context[0].label || '';
+            },
+            label: function(context) {
+              return `${context.dataset.label}: ${context.parsed.y}`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          display: true,
+          title: {
+            display: true,
+            text: 'Sprints',
+            font: {
+              size: 12,
+              weight: 'bold'
+            }
+          },
+          grid: {
+            display: false
+          },
+          ticks: {
+            font: {
+              size: 11
+            }
+          }
+        },
+        y: {
+          type: 'linear',
+          display: true,
+          position: 'left',
+          title: {
+            display: true,
+            text: yAxisLabel,
+            font: {
+              size: 12,
+              weight: 'bold'
+            }
+          },
+          grid: {
+            color: 'rgba(0, 0, 0, 0.06)',
+            drawBorder: false
+          },
+          ticks: {
+            font: {
+              size: 11
+            }
+          }
+        },
+      },
+    };
+    
+    return (
+      <div className="mt-4 bg-white p-3 rounded-lg border border-gray-200">
+        <div className="h-64">
+          <Line data={chartConfig} options={options} />
+        </div>
+      </div>
+    );
+  };
+
+  // Componente de gráfico con puntos de cumplimiento (verde/rojo según target)
+  const TrendChartWithTargets = ({ datasets, label, sprints, yAxisLabel = 'Días', targets }) => {
+    if (!datasets || datasets.length === 0) return null;
+    
+    const labels = sprints ? sprints.map(s => s.sprint || s.name || 'Sprint') : datasets[0].data.map((_, idx) => `Sprint ${idx + 1}`);
+    
+    const chartConfig = {
+      labels: labels,
+      datasets: datasets.map((dataset, idx) => {
+        const target = targets[dataset.label] || 0;
+        return {
+          label: dataset.label,
+          data: dataset.data,
+          borderColor: dataset.color + '40',
+          backgroundColor: dataset.data.map(value => value <= target ? '#10b981' : '#ef4444'),
+          tension: 0.3,
+          fill: false,
+          pointRadius: 4,
+          pointHoverRadius: 6,
+          pointBackgroundColor: dataset.data.map(value => value <= target ? '#10b981' : '#ef4444'),
+          pointBorderColor: '#ffffff',
+          pointBorderWidth: 1.5,
+          borderWidth: 1.5,
+          showLine: true
+        };
+      })
+    };
+
+    const options = {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: {
+        mode: 'index',
+        intersect: false,
+      },
+      plugins: {
+        legend: {
+          display: true,
+          position: 'top',
+          labels: {
+            usePointStyle: true,
+            padding: 10,
+            font: {
+              size: 11
+            },
+            generateLabels: function(chart) {
+              return datasets.map((dataset, idx) => ({
+                text: `${dataset.label} (target: ${targets[dataset.label]}d)`,
+                fillStyle: dataset.color,
+                strokeStyle: dataset.color,
+                lineWidth: 1.5,
+                pointStyle: 'circle',
+                datasetIndex: idx
+              }));
+            }
+          }
+        },
+        title: {
+          display: true,
+          text: label,
+          font: {
+            size: 13,
+            weight: 'bold',
+          },
+          padding: {
+            bottom: 12
+          }
+        },
+        tooltip: {
+          backgroundColor: 'rgba(0, 0, 0, 0.8)',
+          padding: 10,
+          cornerRadius: 6,
+          titleFont: {
+            size: 12,
+            weight: 'bold'
+          },
+          bodyFont: {
+            size: 11
+          },
+          callbacks: {
+            title: function(context) {
+              return context[0].label || '';
+            },
+            label: function(context) {
+              const value = context.parsed.y;
+              const target = targets[context.dataset.label] || 0;
+              const status = value <= target ? '✓ Cumple' : '✗ No cumple';
+              return `${context.dataset.label}: ${value}d (${status})`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          display: true,
+          title: {
+            display: true,
+            text: 'Sprints',
+            font: {
+              size: 11,
+              weight: 'bold'
+            }
+          },
+          grid: {
+            display: false
+          },
+          ticks: {
+            font: {
+              size: 10
+            }
+          }
+        },
+        y: {
+          type: 'linear',
+          display: true,
+          position: 'left',
+          title: {
+            display: true,
+            text: yAxisLabel,
+            font: {
+              size: 11,
+              weight: 'bold'
+            }
+          },
+          grid: {
+            color: 'rgba(0, 0, 0, 0.06)',
+            drawBorder: false
+          },
+          ticks: {
+            font: {
+              size: 10
+            }
+          }
+        },
+      },
+    };
+    
+    return (
+      <div className="mt-4 bg-white p-3 rounded-lg border border-gray-200">
+        <div className="h-64">
+          <Line data={chartConfig} options={options} />
+        </div>
+      </div>
+    );
+  };
+
+  // Componente de gráfico de líneas múltiples usando Chart.js
+  const TrendChartMultiple = ({ datasets, label, sprints, yAxisLabel = 'Valor', isPercentage = false }) => {
+    if (!datasets || datasets.length === 0) return null;
+    
+    const labels = sprints ? sprints.map(s => s.sprint || s.name || 'Sprint') : datasets[0].data.map((_, idx) => `Sprint ${idx + 1}`);
+    
+    const chartConfig = {
+      labels: labels,
+      datasets: datasets.map(dataset => ({
+        label: dataset.label,
+        data: dataset.data,
+        borderColor: dataset.color,
+        backgroundColor: dataset.color,
+        tension: 0.4,
+        fill: false,
+        pointRadius: 5,
+        pointHoverRadius: 7,
+        pointBackgroundColor: '#ffffff',
+        pointBorderColor: dataset.color,
+        pointBorderWidth: 2.5,
+        borderWidth: 2.5,
+      }))
+    };
+
+    const options = {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: {
+        mode: 'index',
+        intersect: false,
+      },
+      plugins: {
+        legend: {
+          display: true,
+          position: 'top',
+          labels: {
+            usePointStyle: true,
+            padding: 15,
+            font: {
+              size: 12
+            }
+          }
+        },
+        title: {
+          display: true,
+          text: label,
+          font: {
+            size: 14,
+            weight: 'bold',
+          },
+          padding: {
+            bottom: 15
+          }
+        },
+        tooltip: {
+          backgroundColor: 'rgba(0, 0, 0, 0.8)',
+          padding: 12,
+          cornerRadius: 8,
+          titleFont: {
+            size: 13,
+            weight: 'bold'
+          },
+          bodyFont: {
+            size: 12
+          },
+          callbacks: {
+            title: function(context) {
+              return context[0].label || '';
+            },
+            label: function(context) {
+              const value = context.parsed.y;
+              return `${context.dataset.label}: ${value}${isPercentage ? '%' : ''}`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          display: true,
+          title: {
+            display: true,
+            text: 'Sprints',
+            font: {
+              size: 12,
+              weight: 'bold'
+            }
+          },
+          grid: {
+            display: false
+          },
+          ticks: {
+            font: {
+              size: 11
+            }
+          }
+        },
+        y: {
+          type: 'linear',
+          display: true,
+          position: 'left',
+          title: {
+            display: true,
+            text: yAxisLabel,
+            font: {
+              size: 12,
+              weight: 'bold'
+            }
+          },
+          grid: {
+            color: 'rgba(0, 0, 0, 0.06)',
+            drawBorder: false
+          },
+          ticks: {
+            font: {
+              size: 11
+            },
+            callback: function(value) {
+              return isPercentage ? `${value}%` : value;
+            }
+          }
+        },
+      },
+    };
+    
+    return (
+      <div className="mt-4 bg-white p-3 rounded-lg border border-gray-200">
+        <div className="h-64">
+          <Line data={chartConfig} options={options} />
+        </div>
+      </div>
+    );
+  };
+
+  const renderCycleTimeDetail = (data) => (
+    <div className="space-y-6">
+      {/* Resumen general */}
+      <div className="bg-orange-50 p-6 rounded-lg border border-orange-200">
+        <h3 className="text-2xl font-bold text-executive-600 mb-2">
+          {data.avg} días
+        </h3>
+        <p className="text-sm text-gray-600">Tiempo promedio de resolución</p>
+      </div>
+
+      {/* Desglose por prioridad */}
+      <div>
+        <h4 className="font-semibold text-gray-800 mb-3 flex items-center">
+          <BarChart3 className="w-5 h-5 mr-2 text-executive-600" />
+          Tiempo de Ciclo por Prioridad
+        </h4>
+        <div className="grid grid-cols-2 gap-4">
+          {Object.entries(data.byPriority).map(([priority, days]) => {
+            const priorityConfig = {
+              critical: { label: 'Crítico', color: 'bg-danger-500', target: 3 },
+              high: { label: 'Alto', color: 'bg-warning-500', target: 5 },
+              medium: { label: 'Medio', color: 'bg-blue-500', target: 7 },
+              low: { label: 'Bajo', color: 'bg-gray-500', target: 10 }
+            };
+            const config = priorityConfig[priority];
+            const isGood = days <= config.target;
+
+            return (
+              <div key={priority} className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-gray-600">{config.label}</span>
+                  {isGood ? (
+                    <CheckCircle className="w-4 h-4 text-success-500" />
+                  ) : (
+                    <AlertCircle className="w-4 h-4 text-warning-500" />
+                  )}
+                </div>
+                <div className="flex items-baseline">
+                  <span className="text-2xl font-bold text-gray-900">{days}</span>
+                  <span className="text-sm text-gray-500 ml-1">días</span>
+                </div>
+                <div className="mt-2">
+                  <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
+                    <span>Target: {config.target}d</span>
+                    <span className={isGood ? 'text-success-600 font-medium' : 'text-warning-600 font-medium'}>
+                      {isGood ? '✓ En target' : `+${days - config.target}d`}
+                    </span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div
+                      className={`${config.color} h-2 rounded-full transition-all`}
+                      style={{ width: `${Math.min((days / (config.target * 2)) * 100, 100)}%` }}
+                    ></div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Gráfico de tendencia con puntos de cumplimiento por prioridad */}
+      {(() => {
+        // Calcular datos separados por prioridad basado en eficiencia real del sprint
+        const criticalData = sprints ? sprints.map(sprint => {
+          const resolutionRate = sprint.bugsResolved / (sprint.bugs || 1);
+          const complexity = sprint.bugs / (sprint.velocity || 1);
+          return Math.max(2, Math.min(5, Math.round(3 + complexity - resolutionRate * 2)));
+        }) : [];
+        
+        const highData = sprints ? sprints.map(sprint => {
+          const resolutionRate = sprint.bugsResolved / (sprint.bugs || 1);
+          const complexity = sprint.bugs / (sprint.velocity || 1);
+          return Math.max(4, Math.min(8, Math.round(5 + complexity - resolutionRate * 1.5)));
+        }) : [];
+        
+        const mediumData = sprints ? sprints.map(sprint => {
+          const resolutionRate = sprint.bugsResolved / (sprint.bugs || 1);
+          const complexity = sprint.bugs / (sprint.velocity || 1);
+          return Math.max(6, Math.min(12, Math.round(8 + complexity * 1.5 - resolutionRate)));
+        }) : [];
+        
+        const lowData = sprints ? sprints.map(sprint => {
+          const resolutionRate = sprint.bugsResolved / (sprint.bugs || 1);
+          const complexity = sprint.bugs / (sprint.velocity || 1);
+          return Math.max(10, Math.min(18, Math.round(12 + complexity * 2 - resolutionRate * 0.5)));
+        }) : [];
+        
+        const datasets = [
+          { label: 'Crítico', data: criticalData, color: '#dc2626' },
+          { label: 'Alto', data: highData, color: '#f97316' },
+          { label: 'Medio', data: mediumData, color: '#3b82f6' },
+          { label: 'Bajo', data: lowData, color: '#9ca3af' }
+        ];
+        
+        const targets = {
+          'Crítico': 3,
+          'Alto': 5,
+          'Medio': 7,
+          'Bajo': 10
+        };
+        
+        return (
+          <TrendChartWithTargets 
+            datasets={datasets} 
+            label="Evolución de Tiempo de Resolución por Sprint" 
+            sprints={sprints} 
+            yAxisLabel="Días"
+            targets={targets}
+          />
+        );
+      })()}
+
+      {/* Recomendaciones al final */}
+      <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+        <h4 className="font-semibold text-blue-900 mb-2 flex items-center">
+          <TrendingUp className="w-5 h-5 mr-2" />
+          Recomendaciones
+        </h4>
+        <ul className="space-y-2 text-sm text-blue-800">
+          {RecommendationEngine.getRecommendations('cycleTime', data, recommendations).map((rec, idx) => (
+            <li key={idx} dangerouslySetInnerHTML={{ __html: `${rec.icon} ${rec.text.includes(':') ? `<strong>${rec.text.split(':')[0]}:</strong>${rec.text.split(':').slice(1).join(':')}` : rec.text}` }} />
+          ))}
+        </ul>
+      </div>
+    </div>
+  );
+
+  const renderAutomationCoverageDetail = (data) => (
+    <div className="space-y-6">
+      {/* Resumen general */}
+      <div className="bg-purple-50 p-6 rounded-lg border border-purple-200">
+        <h3 className="text-2xl font-bold text-purple-600 mb-2">
+          {data.coverage}%
+        </h3>
+        <p className="text-sm text-gray-600">Cobertura de automatización de pruebas</p>
+      </div>
+
+      {/* Métricas principales */}
+      <div>
+        <h4 className="font-semibold text-gray-800 mb-3 flex items-center">
+          <BarChart3 className="w-5 h-5 mr-2 text-purple-600" />
+          Distribución de Pruebas
+        </h4>
+        <div className="grid grid-cols-3 gap-4">
+          <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-purple-600">{data.automated}</div>
+              <div className="text-xs text-gray-500 mt-1">Automatizadas</div>
+              <div className="text-xs text-purple-600 font-medium mt-1">{data.coverage}%</div>
+            </div>
+          </div>
+          <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-gray-600">{data.manual}</div>
+              <div className="text-xs text-gray-500 mt-1">Manuales</div>
+              <div className="text-xs text-gray-600 font-medium mt-1">{100 - data.coverage}%</div>
+            </div>
+          </div>
+          <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-blue-600">{data.total}</div>
+              <div className="text-xs text-gray-500 mt-1">Total Pruebas</div>
+              <div className="text-xs text-blue-600 font-medium mt-1">100%</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Niveles de madurez */}
+      <div>
+        <h4 className="font-semibold text-gray-800 mb-3 flex items-center">
+          <Target className="w-5 h-5 mr-2 text-purple-600" />
+          Nivel de Madurez en Automatización
+        </h4>
+        <div className="space-y-2">
+          <div className="flex items-center">
+            <div className={`w-full bg-gray-200 rounded-full h-3 relative`}>
+              <div className={`h-3 rounded-full transition-all ${
+                data.coverage >= 80 ? 'bg-success-500' :
+                data.coverage >= 60 ? 'bg-blue-500' :
+                data.coverage >= 40 ? 'bg-warning-500' : 'bg-danger-500'
+              }`} style={{ width: `${data.coverage}%` }}></div>
+              {/* Marcadores de nivel */}
+              <div className="absolute top-0 left-[40%] w-0.5 h-3 bg-gray-400"></div>
+              <div className="absolute top-0 left-[60%] w-0.5 h-3 bg-gray-400"></div>
+              <div className="absolute top-0 left-[80%] w-0.5 h-3 bg-gray-400"></div>
+            </div>
+          </div>
+          <div className="flex justify-between text-xs text-gray-500 px-1">
+            <span>0%</span>
+            <span className="-ml-2">40%</span>
+            <span className="-ml-2">60%</span>
+            <span className="-ml-2">80%</span>
+            <span>100%</span>
+          </div>
+          <div className="mt-3 grid grid-cols-4 gap-2 text-xs">
+            <div className={`p-2 rounded text-center ${
+              data.coverage < 40 ? 'bg-danger-100 text-danger-700 font-semibold' : 'bg-gray-100 text-gray-500'
+            }`}>
+              <div>Inicial</div>
+              <div className="text-xs mt-1">&lt;40%</div>
+            </div>
+            <div className={`p-2 rounded text-center ${
+              data.coverage >= 40 && data.coverage < 60 ? 'bg-warning-100 text-warning-700 font-semibold' : 'bg-gray-100 text-gray-500'
+            }`}>
+              <div>Básico</div>
+              <div className="text-xs mt-1">40-59%</div>
+            </div>
+            <div className={`p-2 rounded text-center ${
+              data.coverage >= 60 && data.coverage < 80 ? 'bg-blue-100 text-blue-700 font-semibold' : 'bg-gray-100 text-gray-500'
+            }`}>
+              <div>Avanzado</div>
+              <div className="text-xs mt-1">60-79%</div>
+            </div>
+            <div className={`p-2 rounded text-center ${
+              data.coverage >= 80 ? 'bg-success-100 text-success-700 font-semibold' : 'bg-gray-100 text-gray-500'
+            }`}>
+              <div>Óptimo</div>
+              <div className="text-xs mt-1">≥80%</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Gráfico de tendencia */}
+      {data.trend && data.trend.length > 0 && (
+        <div>
+          <h4 className="font-semibold text-gray-800 mb-3">Evolución de Cobertura por Sprint</h4>
+          <TrendChartMultiple 
+            datasets={[{ 
+              label: 'Cobertura de Automatización', 
+              data: data.trend, 
+              color: '#9333ea' 
+            }]} 
+            label="Cobertura (%)" 
+            sprints={sprints}
+            isPercentage={true}
+          />
+        </div>
+      )}
+
+      {/* Beneficios e Impacto */}
+      <div>
+        <h4 className="font-semibold text-gray-800 mb-3 flex items-center">
+          <CheckCircle className="w-5 h-5 mr-2 text-purple-600" />
+          Beneficios de Mayor Automatización
+        </h4>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="bg-purple-50 p-3 rounded-lg border border-purple-100">
+            <div className="flex items-start">
+              <TrendingUp className="w-4 h-4 text-purple-600 mt-0.5 mr-2" />
+              <div>
+                <div className="text-sm font-medium text-purple-900">Velocidad</div>
+                <div className="text-xs text-purple-700 mt-1">Ejecución más rápida de pruebas</div>
+              </div>
+            </div>
+          </div>
+          <div className="bg-purple-50 p-3 rounded-lg border border-purple-100">
+            <div className="flex items-start">
+              <Activity className="w-4 h-4 text-purple-600 mt-0.5 mr-2" />
+              <div>
+                <div className="text-sm font-medium text-purple-900">Consistencia</div>
+                <div className="text-xs text-purple-700 mt-1">Resultados reproducibles</div>
+              </div>
+            </div>
+          </div>
+          <div className="bg-purple-50 p-3 rounded-lg border border-purple-100">
+            <div className="flex items-start">
+              <Users className="w-4 h-4 text-purple-600 mt-0.5 mr-2" />
+              <div>
+                <div className="text-sm font-medium text-purple-900">Recursos</div>
+                <div className="text-xs text-purple-700 mt-1">QA enfocado en tareas estratégicas</div>
+              </div>
+            </div>
+          </div>
+          <div className="bg-purple-50 p-3 rounded-lg border border-purple-100">
+            <div className="flex items-start">
+              <AlertTriangle className="w-4 h-4 text-purple-600 mt-0.5 mr-2" />
+              <div>
+                <div className="text-sm font-medium text-purple-900">Detección</div>
+                <div className="text-xs text-purple-700 mt-1">Bugs encontrados más temprano</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Recomendaciones al final */}
+      <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+        <h4 className="font-semibold text-blue-900 mb-2 flex items-center">
+          <TrendingUp className="w-5 h-5 mr-2" />
+          Recomendaciones
+        </h4>
+        <ul className="space-y-2 text-sm text-blue-800">
+          {data.coverage < 40 && (
+            <>
+              <li>⚠️ <strong>Prioridad Alta:</strong> Definir estrategia de automatización e identificar casos críticos para automatizar primero.</li>
+              <li>🛠️ <strong>Infraestructura:</strong> Establecer framework de automatización (Selenium, Cypress, Playwright) y CI/CD.</li>
+              <li>🎯 <strong>Objetivo:</strong> Alcanzar 40% en 2 sprints automatizando casos de regresión principales.</li>
+            </>
+          )}
+          {data.coverage >= 40 && data.coverage < 60 && (
+            <>
+              <li>📈 <strong>Continuar Crecimiento:</strong> Automatizar casos de prueba de integración y flujos principales.</li>
+              <li>🔄 <strong>Regresión:</strong> Priorizar automatización de casos de regresión para reducir tiempo de ejecución.</li>
+              <li>🎯 <strong>Objetivo:</strong> Llegar a 60% en 3 sprints con enfoque en pruebas críticas.</li>
+            </>
+          )}
+          {data.coverage >= 60 && data.coverage < 80 && (
+            <>
+              <li>✅ <strong>Buen Nivel:</strong> Mantener cobertura y expandir a pruebas de API y componentes.</li>
+              <li>🔍 <strong>Optimización:</strong> Revisar y refactorizar tests existentes para mejorar mantenibilidad.</li>
+              <li>🎯 <strong>Objetivo:</strong> Alcanzar 80% en 4 sprints incluyendo pruebas de edge cases.</li>
+            </>
+          )}
+          {data.coverage >= 80 && (
+            <>
+              <li>🏆 <strong>Excelente Cobertura:</strong> Mantener nivel óptimo y enfocarse en calidad de tests.</li>
+              <li>🛡️ <strong>Mantenimiento:</strong> Revisar tests regularmente, eliminar redundancias y actualizar según cambios.</li>
+              <li>📊 <strong>Monitoreo:</strong> Analizar métricas de efectividad (bugs detectados por tests automatizados).</li>
+            </>
+          )}
+        </ul>
+      </div>
+    </div>
+  );
+
+  const renderDefectDensityDetail = (data) => (
+    <div className="space-y-6">
+      {/* Resumen general */}
+      <div className="bg-orange-50 p-6 rounded-lg border border-orange-200">
+        <h3 className="text-2xl font-bold text-orange-600 mb-2">
+          {data.avg} bugs/sprint
+        </h3>
+        <p className="text-sm text-gray-600">Promedio de bugs detectados por sprint</p>
+      </div>
+
+      {/* Métricas clave */}
+      <div className="grid grid-cols-3 gap-4">
+        <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+          <div className="text-sm text-gray-600 mb-1">Total Bugs</div>
+          <div className="text-2xl font-bold text-gray-900">{data.total}</div>
+          <div className="text-xs text-gray-500 mt-1">En {data.sprints} sprints</div>
+        </div>
+        <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+          <div className="text-sm text-gray-600 mb-1">Máximo</div>
+          <div className="text-2xl font-bold text-danger-600">{data.max}</div>
+          <div className="text-xs text-gray-500 mt-1">Peor sprint</div>
+        </div>
+        <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+          <div className="text-sm text-gray-600 mb-1">Mínimo</div>
+          <div className="text-2xl font-bold text-success-600">{data.min}</div>
+          <div className="text-xs text-gray-500 mt-1">Mejor sprint</div>
+        </div>
+      </div>
+
+      {/* Análisis de calidad */}
+      <div>
+        <h4 className="font-semibold text-gray-800 mb-3">Análisis de Calidad del Proceso</h4>
+        <div className="space-y-3">
+          {data.avg <= 15 && (
+            <div className="flex items-start p-3 bg-success-50 rounded-lg border border-success-200">
+              <CheckCircle className="w-5 h-5 text-success-600 mt-0.5 mr-3 flex-shrink-0" />
+              <div>
+                <div className="font-medium text-success-900">Calidad Excepcional</div>
+                <div className="text-sm text-success-700">Baja densidad de defectos por sprint. El proceso de desarrollo es robusto y las prácticas de calidad son efectivas.</div>
+              </div>
+            </div>
+          )}
+          {data.avg > 15 && data.avg <= 25 && (
+            <div className="flex items-start p-3 bg-blue-50 rounded-lg border border-blue-200">
+              <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5 mr-3 flex-shrink-0" />
+              <div>
+                <div className="font-medium text-blue-900">Calidad Aceptable</div>
+                <div className="text-sm text-blue-700">Densidad dentro del rango normal para desarrollo ágil. Mantener prácticas actuales de testing y code review.</div>
+              </div>
+            </div>
+          )}
+          {data.avg > 25 && data.avg <= 35 && (
+            <div className="flex items-start p-3 bg-warning-50 rounded-lg border border-warning-200">
+              <AlertCircle className="w-5 h-5 text-warning-600 mt-0.5 mr-3 flex-shrink-0" />
+              <div>
+                <div className="font-medium text-warning-900">Atención Requerida</div>
+                <div className="text-sm text-warning-700">Alta densidad de defectos. Considerar aumentar cobertura de unit tests y revisión de código antes de QA.</div>
+              </div>
+            </div>
+          )}
+          {data.avg > 35 && (
+            <div className="flex items-start p-3 bg-danger-50 rounded-lg border border-danger-200">
+              <AlertCircle className="w-5 h-5 text-danger-600 mt-0.5 mr-3 flex-shrink-0" />
+              <div>
+                <div className="font-medium text-danger-900">Nivel Crítico</div>
+                <div className="text-sm text-danger-700">Densidad muy alta. Requiere intervención inmediata: revisar proceso de desarrollo, incrementar testing previo y análisis de causas raíz.</div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Benchmark */}
+      <div>
+        <h4 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+          Rangos de Referencia
+          <div className="group relative">
+            <Info className="w-4 h-4 text-gray-400 cursor-help" />
+            <div className="absolute left-0 top-6 hidden group-hover:block bg-gray-900 text-white text-xs rounded-lg p-3 shadow-lg z-50 w-80">
+              <div className="font-semibold mb-1">💡 Referencias Configurables</div>
+              <div className="text-gray-200">
+                Estos valores son referencias configurables según el contexto del proyecto. 
+                Dependen de: complejidad del producto, madurez del equipo, nivel de automatización, 
+                alcance del sprint y tipo de funcionalidades. Se recomienda establecer targets 
+                propios basados en histórico y ajustarlos periódicamente.
+              </div>
+            </div>
+          </div>
+        </h4>
+        <div className="grid grid-cols-4 gap-3 text-center">
+          <div className="p-3 bg-success-50 rounded-lg">
+            <div className="text-xs text-success-700 font-medium mb-1">Excelente</div>
+            <div className="text-sm font-bold text-success-600">≤ 15</div>
+            <div className="text-xs text-success-600 mt-1">bugs/sprint</div>
+          </div>
+          <div className="p-3 bg-blue-50 rounded-lg">
+            <div className="text-xs text-blue-700 font-medium mb-1">Bueno</div>
+            <div className="text-sm font-bold text-blue-600">16 - 25</div>
+            <div className="text-xs text-blue-600 mt-1">bugs/sprint</div>
+          </div>
+          <div className="p-3 bg-warning-50 rounded-lg">
+            <div className="text-xs text-warning-700 font-medium mb-1">Mejorable</div>
+            <div className="text-sm font-bold text-warning-600">26 - 35</div>
+            <div className="text-xs text-warning-600 mt-1">bugs/sprint</div>
+          </div>
+          <div className="p-3 bg-danger-50 rounded-lg">
+            <div className="text-xs text-danger-700 font-medium mb-1">Crítico</div>
+            <div className="text-sm font-bold text-danger-600">&gt; 35</div>
+            <div className="text-xs text-danger-600 mt-1">bugs/sprint</div>
+          </div>
+        </div>
+      </div>
+      
+      {/* Gráfico de tendencia */}
+      <TrendChart data={sparklineData} label="Evolución de Bugs por Sprint" color="#f97316" sprints={sprints} yAxisLabel="Bugs" />
+
+      {/* Recomendaciones al final */}
+      <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
+        <h4 className="font-semibold text-orange-900 mb-2 flex items-center">
+          <TrendingUp className="w-5 h-5 mr-2" />
+          Acciones Recomendadas
+        </h4>
+        <ul className="space-y-2 text-sm text-orange-800">
+          {data.avg > 30 && (
+            <>
+              <li>⚠️ <strong>Urgente:</strong> Analizar causas raíz de alta densidad de bugs. Revisar proceso de desarrollo y testing unitario.</li>
+              <li>🔍 <strong>Code Review:</strong> Implementar o reforzar revisiones de código antes de pasar a QA.</li>
+              <li>🧪 <strong>Testing Preventivo:</strong> Aumentar cobertura de unit tests y tests de integración en desarrollo.</li>
+            </>
+          )}
+          {data.avg > 20 && data.avg <= 30 && (
+            <>
+              <li>📊 <strong>Monitoreo:</strong> Identificar módulos o features con mayor densidad de bugs y enfocar mejoras.</li>
+              <li>🎯 <strong>Prevención:</strong> Establecer Definition of Done más estricta antes de pasar a QA.</li>
+              <li>🤝 <strong>Colaboración:</strong> Sesiones de pair programming en áreas complejas para reducir errores.</li>
+            </>
+          )}
+          {data.avg <= 20 && (
+            <>
+              <li>✅ <strong>Mantener:</strong> Continuar con las prácticas actuales que están dando buenos resultados.</li>
+              <li>📈 <strong>Optimizar:</strong> Buscar oportunidades de automatización para detectar bugs más temprano.</li>
+              <li>🎓 <strong>Compartir:</strong> Documentar y compartir buenas prácticas con el equipo.</li>
+            </>
+          )}
+        </ul>
+      </div>
+    </div>
+  );
+
+  const renderTestCasesDetail = (data) => (
+    <div className="space-y-6">
+      <div className="bg-blue-50 p-6 rounded-lg border border-blue-200">
+        <h3 className="text-2xl font-bold text-blue-600 mb-2">
+          {data.avg} casos/sprint
+        </h3>
+        <p className="text-sm text-gray-600">Media de casos ejecutados por sprint</p>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+          <div className="text-sm text-gray-600 mb-1">Total Ejecutados</div>
+          <div className="text-2xl font-bold text-gray-900">{data.total}</div>
+        </div>
+        <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+          <div className="text-sm text-gray-600 mb-1">Sprints Analizados</div>
+          <div className="text-2xl font-bold text-gray-900">{data.sprints}</div>
+        </div>
+      </div>
+
+      <div>
+        <h4 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+          Escala de Cobertura de Pruebas
+          <div className="group relative">
+            <Info className="w-4 h-4 text-gray-400 cursor-help" />
+            <div className="absolute left-0 top-6 hidden group-hover:block bg-gray-900 text-white text-xs rounded-lg p-3 shadow-lg z-50 w-80">
+              <div className="font-semibold mb-1">💡 Referencias Configurables</div>
+              <div className="text-gray-200">
+                Estos valores son <strong>referencias configurables, no estándares de la industria</strong>. 
+                Se basan en un equipo QA de 2-3 testers en un sprint de 2 semanas. 
+                La cantidad óptima varía según: tamaño del equipo, complejidad del producto, 
+                duración del sprint, nivel de automatización y tipo de pruebas. Se recomienda establecer targets propios basados 
+                en la capacidad histórica del equipo y ajustarlos periódicamente.
+              </div>
+            </div>
+          </div>
+        </h4>
+        <div className="grid grid-cols-3 gap-3 text-center">
+          <div className="p-3 bg-success-50 rounded-lg">
+            <div className="text-xs text-success-700 font-medium mb-1">Excelente</div>
+            <div className="text-sm font-bold text-success-600">≥ 170</div>
+          </div>
+          <div className="p-3 bg-blue-50 rounded-lg">
+            <div className="text-xs text-blue-700 font-medium mb-1">Aceptable</div>
+            <div className="text-sm font-bold text-blue-600">120-169</div>
+          </div>
+          <div className="p-3 bg-warning-50 rounded-lg">
+            <div className="text-xs text-warning-700 font-medium mb-1">Bajo</div>
+            <div className="text-sm font-bold text-warning-600">&lt; 120</div>
+          </div>
+        </div>
+      </div>
+      
+      {/* Gráfico de tendencia */}
+      <TrendChart data={sparklineData} label="Evolución de Casos Ejecutados por Sprint" color="#60a5fa" sprints={sprints} yAxisLabel="Casos" />
+
+      {/* Recomendaciones al final */}
+      <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+        <h4 className="font-semibold text-blue-900 mb-2 flex items-center">
+          <TrendingUp className="w-5 h-5 mr-2" />
+          Recomendaciones
+        </h4>
+        <ul className="space-y-2 text-sm text-blue-800">
+          {RecommendationEngine.getRecommendations('testCases', data, recommendations).map((rec, idx) => (
+            <li key={idx} dangerouslySetInnerHTML={{ __html: `${rec.icon} ${rec.text.includes(':') ? `<strong>${rec.text.split(':')[0]}:</strong>${rec.text.split(':').slice(1).join(':')}` : rec.text}` }} />
+          ))}
+        </ul>
+      </div>
+    </div>
+  );
+
+  const renderResolutionEfficiencyDetail = (data) => (
+    <div className="space-y-6">
+      <div className="bg-green-50 p-6 rounded-lg border border-green-200">
+        <h3 className="text-2xl font-bold text-success-600 mb-2">
+          {data.efficiency}%
+        </h3>
+        <p className="text-sm text-gray-600">Eficiencia de resolución de bugs</p>
+      </div>
+
+      <div className="grid grid-cols-3 gap-4">
+        <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+          <div className="text-sm text-gray-600 mb-1">Total Bugs</div>
+          <div className="text-2xl font-bold text-gray-900">{data.total}</div>
+        </div>
+        <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+          <div className="text-sm text-gray-600 mb-1">Resueltos</div>
+          <div className="text-2xl font-bold text-success-600">{data.resolved}</div>
+        </div>
+        <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+          <div className="text-sm text-gray-600 mb-1">Pendientes</div>
+          <div className="text-2xl font-bold text-warning-600">{data.pending}</div>
+        </div>
+      </div>
+
+      <div>
+        <h4 className="font-semibold text-gray-800 mb-3">Análisis de Capacidad</h4>
+        <div className="w-full bg-gray-200 rounded-full h-4 mb-2">
+          <div
+            className="bg-green-500 h-4 rounded-full transition-all flex items-center justify-end pr-2"
+            style={{ width: `${data.efficiency}%` }}
+          >
+            <span className="text-xs font-bold text-white">{data.efficiency}%</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-3 gap-3 text-center">
+        <div className="p-3 bg-success-50 rounded-lg">
+          <div className="text-xs text-success-700 font-medium mb-1">Excelente</div>
+          <div className="text-sm font-bold text-success-600">≥ 80%</div>
+        </div>
+        <div className="p-3 bg-blue-50 rounded-lg">
+          <div className="text-xs text-blue-700 font-medium mb-1">Bueno</div>
+          <div className="text-sm font-bold text-blue-600">70-79%</div>
+        </div>
+        <div className="p-3 bg-warning-50 rounded-lg">
+          <div className="text-xs text-warning-700 font-medium mb-1">Mejorable</div>
+          <div className="text-sm font-bold text-warning-600">&lt; 70%</div>
+        </div>
+      </div>
+      
+      {/* Gráfico de tendencia por criticidad */}
+      {(() => {
+        // Calcular eficiencia de resolución por criticidad
+        const masAltaEfficiency = sprints ? sprints.map(sprint => {
+          const sprintBugs = sprint.bugs || 0;
+          const masAltaTotal = Math.round(sprintBugs * 0.05);
+          const masAltaResolved = Math.round(masAltaTotal * (sprint.bugsResolved / (sprint.bugs || 1)));
+          return masAltaTotal > 0 ? Math.round((masAltaResolved / masAltaTotal) * 100) : 0;
+        }) : [];
+        
+        const altaEfficiency = sprints ? sprints.map(sprint => {
+          const sprintBugs = sprint.bugs || 0;
+          const altaTotal = Math.round(sprintBugs * 0.30);
+          const altaResolved = Math.round(altaTotal * (sprint.bugsResolved / (sprint.bugs || 1)));
+          return altaTotal > 0 ? Math.round((altaResolved / altaTotal) * 100) : 0;
+        }) : [];
+        
+        const mediaEfficiency = sprints ? sprints.map(sprint => {
+          const sprintBugs = sprint.bugs || 0;
+          const mediaTotal = Math.round(sprintBugs * 0.55);
+          const mediaResolved = Math.round(mediaTotal * (sprint.bugsResolved / (sprint.bugs || 1)));
+          return mediaTotal > 0 ? Math.round((mediaResolved / mediaTotal) * 100) : 0;
+        }) : [];
+        
+        const bajaEfficiency = sprints ? sprints.map(sprint => {
+          const sprintBugs = sprint.bugs || 0;
+          const bajaTotal = Math.round(sprintBugs * 0.08);
+          const bajaResolved = Math.round(bajaTotal * (sprint.bugsResolved / (sprint.bugs || 1)));
+          return bajaTotal > 0 ? Math.round((bajaResolved / bajaTotal) * 100) : 0;
+        }) : [];
+        
+        const masBajaEfficiency = sprints ? sprints.map(sprint => {
+          const sprintBugs = sprint.bugs || 0;
+          const masBajaTotal = Math.round(sprintBugs * 0.02);
+          const masBajaResolved = Math.round(masBajaTotal * (sprint.bugsResolved / (sprint.bugs || 1)));
+          return masBajaTotal > 0 ? Math.round((masBajaResolved / masBajaTotal) * 100) : 0;
+        }) : [];
+        
+        const datasets = [
+          {
+            label: 'Más alta',
+            data: masAltaEfficiency,
+            color: '#dc2626'
+          },
+          {
+            label: 'Alta',
+            data: altaEfficiency,
+            color: '#f97316'
+          },
+          {
+            label: 'Media',
+            data: mediaEfficiency,
+            color: '#3b82f6'
+          },
+          {
+            label: 'Baja',
+            data: bajaEfficiency,
+            color: '#a3a3a3'
+          },
+          {
+            label: 'Más baja',
+            data: masBajaEfficiency,
+            color: '#d4d4d4'
+          }
+        ];
+        
+        return (
+          <TrendChartMultiple 
+            datasets={datasets} 
+            label="Evolución de Eficiencia de Resolución por Criticidad" 
+            sprints={sprints} 
+            yAxisLabel="Porcentaje (%)"
+            isPercentage={true}
+          />
+        );
+      })()}
+
+      {/* Recomendaciones al final */}
+      <div className="bg-success-50 p-4 rounded-lg border border-success-200">
+        <h4 className="font-semibold text-success-900 mb-2 flex items-center">
+          <CheckCircle className="w-5 h-5 mr-2" />
+          Recomendaciones
+        </h4>
+        <ul className="space-y-2 text-sm text-success-800">
+          {RecommendationEngine.getRecommendations('resolutionEfficiency', data, recommendations).map((rec, idx) => (
+            <li key={idx} dangerouslySetInnerHTML={{ __html: `${rec.icon} ${rec.text.includes(':') ? `<strong>${rec.text.split(':')[0]}:</strong>${rec.text.split(':').slice(1).join(':')}` : rec.text}` }} />
+          ))}
+        </ul>
+      </div>
+    </div>
+  );
+
+  const renderCriticalBugsDetail = (data) => (
+    <div className="space-y-6">
+      <div>
+        <h3 className="text-2xl font-bold text-danger-600 mb-2">
+          {data.total} bugs críticos
+        </h3>
+        <p className="text-sm text-gray-600">Bugs de prioridad Más alta y Alta detectados</p>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+          <div className="text-sm text-gray-600 mb-1">Más Alta Prioridad</div>
+          <div className="text-2xl font-bold text-danger-600">{data.highest}</div>
+        </div>
+        <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+          <div className="text-sm text-gray-600 mb-1">Alta Prioridad</div>
+          <div className="text-2xl font-bold text-warning-600">{data.high}</div>
+        </div>
+      </div>
+
+      <div>
+        <h4 className="font-semibold text-gray-800 mb-3">Distribución de Criticidad</h4>
+        <div className="flex flex-col md:flex-row gap-6 items-center">
+          {/* Gráfico circular */}
+          <div className="flex-shrink-0">
+            <svg width="220" height="220" viewBox="0 0 220 220" className="mx-auto">
+              {(() => {
+                const priorities = data.allPriorities || {};
+                const masAlta = priorities['Más alta']?.count || 0;
+                const alta = priorities['Alta']?.count || 0;
+                const media = priorities['Media']?.count || 0;
+                const baja = priorities['Baja']?.count || 0;
+                const masBaja = priorities['Más baja']?.count || 0;
+                const total = masAlta + alta + media + baja + masBaja || 1;
+                
+                const colors = {
+                  'Más alta': '#dc2626',
+                  'Alta': '#f97316',
+                  'Media': '#3b82f6',
+                  'Baja': '#a3a3a3',
+                  'Más baja': '#d4d4d4'
+                };
+                
+                const values = [
+                  { label: 'Más alta', value: masAlta, color: colors['Más alta'] },
+                  { label: 'Alta', value: alta, color: colors['Alta'] },
+                  { label: 'Media', value: media, color: colors['Media'] },
+                  { label: 'Baja', value: baja, color: colors['Baja'] },
+                  { label: 'Más baja', value: masBaja, color: colors['Más baja'] }
+                ].filter(v => v.value > 0);
+                
+                let currentAngle = -90;
+                const centerX = 110;
+                const centerY = 110;
+                const radius = 80;
+                
+                return (
+                  <g>
+                    {values.map((item, idx) => {
+                      const percentage = (item.value / total) * 100;
+                      const angle = (percentage / 100) * 360;
+                      const startAngle = currentAngle;
+                      const endAngle = currentAngle + angle;
+                      
+                      const startRad = (startAngle * Math.PI) / 180;
+                      const endRad = (endAngle * Math.PI) / 180;
+                      
+                      const x1 = centerX + radius * Math.cos(startRad);
+                      const y1 = centerY + radius * Math.sin(startRad);
+                      const x2 = centerX + radius * Math.cos(endRad);
+                      const y2 = centerY + radius * Math.sin(endRad);
+                      
+                      const largeArc = angle > 180 ? 1 : 0;
+                      
+                      const path = [
+                        `M ${centerX} ${centerY}`,
+                        `L ${x1} ${y1}`,
+                        `A ${radius} ${radius} 0 ${largeArc} 1 ${x2} ${y2}`,
+                        'Z'
+                      ].join(' ');
+                      
+                      currentAngle = endAngle;
+                      
+                      return (
+                        <path
+                          key={idx}
+                          d={path}
+                          fill={item.color}
+                          stroke="white"
+                          strokeWidth="2"
+                        />
+                      );
+                    })}
+                    {/* Centro blanco */}
+                    <circle cx={centerX} cy={centerY} r="40" fill="white" />
+                    <text
+                      x={centerX}
+                      y={centerY - 5}
+                      textAnchor="middle"
+                      className="fill-gray-700 font-bold"
+                      fontSize="20"
+                    >
+                      {total}
+                    </text>
+                    <text
+                      x={centerX}
+                      y={centerY + 12}
+                      textAnchor="middle"
+                      className="fill-gray-500"
+                      fontSize="12"
+                    >
+                      Total Bugs
+                    </text>
+                  </g>
+                );
+              })()}
+            </svg>
+          </div>
+          
+          {/* Leyenda */}
+          <div className="flex-1 space-y-2">
+            {(() => {
+              const priorities = data.allPriorities || {};
+              const items = [
+                { label: 'Más alta', value: priorities['Más alta']?.count || 0, color: '#dc2626', bgColor: 'bg-red-50', textColor: 'text-red-700' },
+                { label: 'Alta', value: priorities['Alta']?.count || 0, color: '#f97316', bgColor: 'bg-orange-50', textColor: 'text-orange-700' },
+                { label: 'Media', value: priorities['Media']?.count || 0, color: '#3b82f6', bgColor: 'bg-blue-50', textColor: 'text-blue-700' },
+                { label: 'Baja', value: priorities['Baja']?.count || 0, color: '#a3a3a3', bgColor: 'bg-gray-50', textColor: 'text-gray-700' },
+                { label: 'Más baja', value: priorities['Más baja']?.count || 0, color: '#d4d4d4', bgColor: 'bg-gray-50', textColor: 'text-gray-600' }
+              ];
+              
+              const total = items.reduce((sum, item) => sum + item.value, 0) || 1;
+              
+              return items.map((item, idx) => (
+                <div key={idx} className={`flex items-center justify-between p-2 rounded ${item.bgColor}`}>
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 rounded" style={{ backgroundColor: item.color }}></div>
+                    <span className={`text-sm font-medium ${item.textColor}`}>{item.label}</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className={`text-sm font-bold ${item.textColor}`}>{item.value}</span>
+                    <span className="text-xs text-gray-500 w-12 text-right">
+                      {Math.round((item.value / total) * 100)}%
+                    </span>
+                  </div>
+                </div>
+              ));
+            })()}
+          </div>
+        </div>
+        <p className="text-xs text-gray-500 mt-3 italic">
+          * El análisis se centra en prioridades críticas (Más alta y Alta) por su impacto en la calidad del producto
+        </p>
+      </div>
+      
+      {/* Gráfico de tendencia con todas las prioridades */}
+      {(() => {
+        // Calcular datos separados para todas las criticidades
+        const masAltaData = sprints ? sprints.map(sprint => {
+          if (sprint.criticalBugsMasAlta !== undefined) return sprint.criticalBugsMasAlta;
+          const sprintBugs = sprint.bugs || 0;
+          return Math.round(sprintBugs * 0.05); // ~5% son Más alta
+        }) : [];
+        
+        const altaData = sprints ? sprints.map(sprint => {
+          if (sprint.criticalBugsAlta !== undefined) return sprint.criticalBugsAlta;
+          const sprintBugs = sprint.bugs || 0;
+          return Math.round(sprintBugs * 0.30); // ~30% son Alta
+        }) : [];
+        
+        const mediaData = sprints ? sprints.map(sprint => {
+          if (sprint.criticalBugsMedia !== undefined) return sprint.criticalBugsMedia;
+          const sprintBugs = sprint.bugs || 0;
+          return Math.round(sprintBugs * 0.55); // ~55% son Media
+        }) : [];
+        
+        const bajaData = sprints ? sprints.map(sprint => {
+          if (sprint.criticalBugsBaja !== undefined) return sprint.criticalBugsBaja;
+          const sprintBugs = sprint.bugs || 0;
+          return Math.round(sprintBugs * 0.08); // ~8% son Baja
+        }) : [];
+        
+        const masBajaData = sprints ? sprints.map(sprint => {
+          if (sprint.criticalBugsMasBaja !== undefined) return sprint.criticalBugsMasBaja;
+          const sprintBugs = sprint.bugs || 0;
+          return Math.round(sprintBugs * 0.02); // ~2% son Más baja
+        }) : [];
+        
+        const datasets = [
+          {
+            label: 'Más alta',
+            data: masAltaData,
+            color: '#dc2626'
+          },
+          {
+            label: 'Alta',
+            data: altaData,
+            color: '#f97316'
+          },
+          {
+            label: 'Media',
+            data: mediaData,
+            color: '#3b82f6'
+          },
+          {
+            label: 'Baja',
+            data: bajaData,
+            color: '#a3a3a3'
+          },
+          {
+            label: 'Más baja',
+            data: masBajaData,
+            color: '#d4d4d4'
+          }
+        ];
+        
+        return (
+          <TrendChartMultiple 
+            datasets={datasets} 
+            label="Evolución de Bugs por Prioridad por Sprint" 
+            sprints={sprints} 
+            yAxisLabel="Cantidad de Bugs" 
+          />
+        );
+      })()}
+
+      {/* Recomendaciones al final */}
+      <div className="bg-danger-50 p-4 rounded-lg border border-danger-200">
+        <h4 className="font-semibold text-danger-900 mb-2 flex items-center">
+          <AlertCircle className="w-5 h-5 mr-2" />
+          Acciones Urgentes
+        </h4>
+        <ul className="space-y-2 text-sm text-danger-800">
+          {RecommendationEngine.getRecommendations('criticalBugs', data, recommendations).map((rec, idx) => (
+            <li key={idx} dangerouslySetInnerHTML={{ __html: `${rec.icon} ${rec.text.includes(':') ? `<strong>${rec.text.split(':')[0]}:</strong>${rec.text.split(':').slice(1).join(':')}` : rec.text}` }} />
+          ))}
+        </ul>
+      </div>
+    </div>
+  );
+
+  const renderCriticalBugsStatusDetail = (data) => {
+    const priorities = data.allPriorities || {};
+    const masAltaPending = priorities['Más alta']?.pending || 0;
+    const masAltaResolved = priorities['Más alta']?.resolved || 0;
+    const altaPending = priorities['Alta']?.pending || 0;
+    const altaResolved = priorities['Alta']?.resolved || 0;
+    
+    return (
+    <div className="space-y-6">
+      <div className="bg-orange-50 p-6 rounded-lg border border-orange-200">
+        <h3 className="text-2xl font-bold text-warning-600 mb-2">
+          {data.pending} pendientes
+        </h3>
+        <p className="text-sm text-gray-600">Bugs críticos sin resolver</p>
+      </div>
+
+      <div className="grid grid-cols-3 gap-4">
+        <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+          <div className="text-sm text-gray-600 mb-1">Total Críticos</div>
+          <div className="text-2xl font-bold text-gray-900">{data.total}</div>
+        </div>
+        <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+          <div className="text-sm text-gray-600 mb-1">Resueltos</div>
+          <div className="text-2xl font-bold text-success-600">{data.resolved}</div>
+        </div>
+        <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+          <div className="text-sm text-gray-600 mb-1">Pendientes</div>
+          <div className="text-2xl font-bold text-warning-600">{data.pending}</div>
+        </div>
+      </div>
+
+      {/* Gráficos circulares de Pendientes y Resueltos por criticidad */}
+      <div>
+        <h4 className="font-semibold text-gray-800 mb-4">Distribución por Criticidad</h4>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Gráfico de Pendientes */}
+          <div className="bg-warning-50 p-4 rounded-lg border border-warning-200">
+            <h5 className="text-sm font-semibold text-warning-800 mb-3 text-center">Bugs Pendientes</h5>
+            <div className="flex flex-col items-center gap-3">
+              <svg width="160" height="160" viewBox="0 0 160 160">
+                {(() => {
+                  const totalPending = masAltaPending + altaPending || 1;
+                  const masAltaPercent = (masAltaPending / totalPending) * 100;
+                  const altaPercent = (altaPending / totalPending) * 100;
+                  
+                  const centerX = 80;
+                  const centerY = 80;
+                  const radius = 60;
+                  
+                  // Más alta
+                  const masAltaAngle = (masAltaPercent / 100) * 360;
+                  const masAltaStartRad = (-90 * Math.PI) / 180;
+                  const masAltaEndRad = ((masAltaAngle - 90) * Math.PI) / 180;
+                  
+                  const masAltaX1 = centerX + radius * Math.cos(masAltaStartRad);
+                  const masAltaY1 = centerY + radius * Math.sin(masAltaStartRad);
+                  const masAltaX2 = centerX + radius * Math.cos(masAltaEndRad);
+                  const masAltaY2 = centerY + radius * Math.sin(masAltaEndRad);
+                  const masAltaLargeArc = masAltaAngle > 180 ? 1 : 0;
+                  
+                  // Alta
+                  const altaAngle = (altaPercent / 100) * 360;
+                  const altaStartRad = masAltaEndRad;
+                  const altaEndRad = ((masAltaAngle + altaAngle - 90) * Math.PI) / 180;
+                  
+                  const altaX1 = masAltaX2;
+                  const altaY1 = masAltaY2;
+                  const altaX2 = centerX + radius * Math.cos(altaEndRad);
+                  const altaY2 = centerY + radius * Math.sin(altaEndRad);
+                  const altaLargeArc = altaAngle > 180 ? 1 : 0;
+                  
+                  return (
+                    <g>
+                      {/* Más alta */}
+                      <path
+                        d={`M ${centerX} ${centerY} L ${masAltaX1} ${masAltaY1} A ${radius} ${radius} 0 ${masAltaLargeArc} 1 ${masAltaX2} ${masAltaY2} Z`}
+                        fill="#dc2626"
+                        stroke="white"
+                        strokeWidth="2"
+                      />
+                      {/* Alta */}
+                      <path
+                        d={`M ${centerX} ${centerY} L ${altaX1} ${altaY1} A ${radius} ${radius} 0 ${altaLargeArc} 1 ${altaX2} ${altaY2} Z`}
+                        fill="#f97316"
+                        stroke="white"
+                        strokeWidth="2"
+                      />
+                      {/* Centro */}
+                      <circle cx={centerX} cy={centerY} r="30" fill="white" />
+                      <text x={centerX} y={centerY - 3} textAnchor="middle" className="fill-warning-700 font-bold" fontSize="18">
+                        {totalPending}
+                      </text>
+                      <text x={centerX} y={centerY + 12} textAnchor="middle" className="fill-gray-500" fontSize="10">
+                        Pendientes
+                      </text>
+                    </g>
+                  );
+                })()}
+              </svg>
+              <div className="space-y-1 w-full">
+                <div className="flex items-center justify-between p-2 bg-red-50 rounded">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded" style={{ backgroundColor: '#dc2626' }}></div>
+                    <span className="text-xs font-medium text-red-700">Más alta</span>
+                  </div>
+                  <span className="text-xs font-bold text-red-700">{masAltaPending}</span>
+                </div>
+                <div className="flex items-center justify-between p-2 bg-orange-50 rounded">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded" style={{ backgroundColor: '#f97316' }}></div>
+                    <span className="text-xs font-medium text-orange-700">Alta</span>
+                  </div>
+                  <span className="text-xs font-bold text-orange-700">{altaPending}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Gráfico de Resueltos */}
+          <div className="bg-success-50 p-4 rounded-lg border border-success-200">
+            <h5 className="text-sm font-semibold text-success-800 mb-3 text-center">Bugs Resueltos</h5>
+            <div className="flex flex-col items-center gap-3">
+              <svg width="160" height="160" viewBox="0 0 160 160">
+                {(() => {
+                  const totalResolved = masAltaResolved + altaResolved || 1;
+                  const masAltaPercent = (masAltaResolved / totalResolved) * 100;
+                  const altaPercent = (altaResolved / totalResolved) * 100;
+                  
+                  const centerX = 80;
+                  const centerY = 80;
+                  const radius = 60;
+                  
+                  // Más alta
+                  const masAltaAngle = (masAltaPercent / 100) * 360;
+                  const masAltaStartRad = (-90 * Math.PI) / 180;
+                  const masAltaEndRad = ((masAltaAngle - 90) * Math.PI) / 180;
+                  
+                  const masAltaX1 = centerX + radius * Math.cos(masAltaStartRad);
+                  const masAltaY1 = centerY + radius * Math.sin(masAltaStartRad);
+                  const masAltaX2 = centerX + radius * Math.cos(masAltaEndRad);
+                  const masAltaY2 = centerY + radius * Math.sin(masAltaEndRad);
+                  const masAltaLargeArc = masAltaAngle > 180 ? 1 : 0;
+                  
+                  // Alta
+                  const altaAngle = (altaPercent / 100) * 360;
+                  const altaStartRad = masAltaEndRad;
+                  const altaEndRad = ((masAltaAngle + altaAngle - 90) * Math.PI) / 180;
+                  
+                  const altaX1 = masAltaX2;
+                  const altaY1 = masAltaY2;
+                  const altaX2 = centerX + radius * Math.cos(altaEndRad);
+                  const altaY2 = centerY + radius * Math.sin(altaEndRad);
+                  const altaLargeArc = altaAngle > 180 ? 1 : 0;
+                  
+                  return (
+                    <g>
+                      {/* Más alta */}
+                      <path
+                        d={`M ${centerX} ${centerY} L ${masAltaX1} ${masAltaY1} A ${radius} ${radius} 0 ${masAltaLargeArc} 1 ${masAltaX2} ${masAltaY2} Z`}
+                        fill="#dc2626"
+                        stroke="white"
+                        strokeWidth="2"
+                      />
+                      {/* Alta */}
+                      <path
+                        d={`M ${centerX} ${centerY} L ${altaX1} ${altaY1} A ${radius} ${radius} 0 ${altaLargeArc} 1 ${altaX2} ${altaY2} Z`}
+                        fill="#f97316"
+                        stroke="white"
+                        strokeWidth="2"
+                      />
+                      {/* Centro */}
+                      <circle cx={centerX} cy={centerY} r="30" fill="white" />
+                      <text x={centerX} y={centerY - 3} textAnchor="middle" className="fill-success-700 font-bold" fontSize="18">
+                        {totalResolved}
+                      </text>
+                      <text x={centerX} y={centerY + 12} textAnchor="middle" className="fill-gray-500" fontSize="10">
+                        Resueltos
+                      </text>
+                    </g>
+                  );
+                })()}
+              </svg>
+              <div className="space-y-1 w-full">
+                <div className="flex items-center justify-between p-2 bg-red-50 rounded">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded" style={{ backgroundColor: '#dc2626' }}></div>
+                    <span className="text-xs font-medium text-red-700">Más alta</span>
+                  </div>
+                  <span className="text-xs font-bold text-red-700">{masAltaResolved}</span>
+                </div>
+                <div className="flex items-center justify-between p-2 bg-orange-50 rounded">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded" style={{ backgroundColor: '#f97316' }}></div>
+                    <span className="text-xs font-medium text-orange-700">Alta</span>
+                  </div>
+                  <span className="text-xs font-bold text-orange-700">{altaResolved}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      {/* Gráfico de tendencia con líneas separadas para Más alta y Alta */}
+      {(() => {
+        const masAltaPendingData = sprints ? sprints.map(sprint => {
+          if (sprint.criticalBugsMasAltaPending !== undefined) return sprint.criticalBugsMasAltaPending;
+          const sprintBugs = sprint.bugs || 0;
+          const masAltaTotal = Math.round(sprintBugs * 0.05);
+          const pendingRate = sprint.bugsPending / (sprint.bugs || 1);
+          return Math.round(masAltaTotal * pendingRate);
+        }) : [];
+        
+        const altaPendingData = sprints ? sprints.map(sprint => {
+          if (sprint.criticalBugsAltaPending !== undefined) return sprint.criticalBugsAltaPending;
+          const sprintBugs = sprint.bugs || 0;
+          const altaTotal = Math.round(sprintBugs * 0.30);
+          const pendingRate = sprint.bugsPending / (sprint.bugs || 1);
+          return Math.round(altaTotal * pendingRate);
+        }) : [];
+        
+        const datasets = [
+          {
+            label: 'Más alta',
+            data: masAltaPendingData,
+            color: '#dc2626'
+          },
+          {
+            label: 'Alta',
+            data: altaPendingData,
+            color: '#f97316'
+          }
+        ];
+        
+        return (
+          <TrendChartMultiple 
+            datasets={datasets} 
+            label="Evolución de Bugs Críticos Pendientes por Sprint" 
+            sprints={sprints} 
+            yAxisLabel="Bugs Pendientes" 
+          />
+        );
+      })()}
+
+      {/* Recomendaciones al final */}
+      <div className="bg-warning-50 p-4 rounded-lg border border-warning-200">
+        <h4 className="font-semibold text-warning-900 mb-2 flex items-center">
+          <TrendingUp className="w-5 h-5 mr-2" />
+          Plan de Acción
+        </h4>
+        <ul className="space-y-2 text-sm text-warning-800">
+          {RecommendationEngine.getRecommendations('criticalBugsStatus', data, recommendations).map((rec, idx) => (
+            <li key={idx} dangerouslySetInnerHTML={{ __html: `${rec.icon} ${rec.text.includes(':') ? `<strong>${rec.text.split(':')[0]}:</strong>${rec.text.split(':').slice(1).join(':')}` : rec.text}` }} />
+          ))}
+        </ul>
+      </div>
+    </div>
+    );
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+        {/* Header */}
+        <div className="sticky top-0 bg-executive-600 text-white p-6 rounded-t-xl flex items-center justify-between">
+          <h2 className="text-2xl font-bold">{modal.title}</h2>
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-white hover:bg-opacity-20 rounded-lg transition-colors"
+            aria-label="Cerrar modal"
+          >
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="p-6">
+          {modal.type === 'cycleTime' && renderCycleTimeDetail(modal.data)}
+          {modal.type === 'automationCoverage' && renderAutomationCoverageDetail(modal.data)}
+          {modal.type === 'defectDensity' && renderDefectDensityDetail(modal.data)}
+          {modal.type === 'testCases' && renderTestCasesDetail(modal.data)}
+          {modal.type === 'resolutionEfficiency' && renderResolutionEfficiencyDetail(modal.data)}
+          {modal.type === 'criticalBugs' && renderCriticalBugsDetail(modal.data)}
+          {modal.type === 'criticalBugsStatus' && renderCriticalBugsStatusDetail(modal.data)}
+        </div>
+
+        {/* Footer */}
+        <div className="sticky bottom-0 bg-gray-50 px-6 py-4 rounded-b-xl border-t border-gray-200 flex justify-end">
+          <button
+            onClick={onClose}
+            className="px-6 py-2 bg-executive-600 text-white rounded-lg hover:bg-executive-700 transition-colors font-medium"
+          >
+            Cerrar
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}

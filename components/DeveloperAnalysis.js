@@ -1,6 +1,16 @@
 import { User, TrendingUp, TrendingDown, AlertCircle } from 'lucide-react';
 
 export default function DeveloperAnalysis({ data }) {
+  // Guard against empty or undefined data
+  if (!data || !Array.isArray(data) || data.length === 0) {
+    return (
+      <div className="executive-card text-center p-8">
+        <AlertCircle className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+        <p className="text-gray-600">No hay datos de desarrolladores disponibles</p>
+      </div>
+    );
+  }
+
   const sortedDevelopers = [...data].sort((a, b) => b.pending - a.pending);
   const totalBugs = data.reduce((sum, dev) => sum + dev.totalBugs, 0);
   const totalPending = data.reduce((sum, dev) => sum + dev.pending, 0);

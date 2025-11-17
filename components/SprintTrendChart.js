@@ -22,7 +22,7 @@ ChartJS.register(
 
 export default function SprintTrendChart({ data }) {
   const chartData = {
-    labels: data.map(item => `Sprint ${item.sprint}`),
+    labels: data.map(item => item.sprint || item.name || `Sprint ${item.id}`),
     datasets: [
       {
         label: 'Bugs Encontrados',
