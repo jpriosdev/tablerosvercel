@@ -9,6 +9,7 @@ Dashboard de control de calidad y trazabilidad del proceso de pruebas para direc
 - **Análisis por Equipos**: Productividad y distribución de carga
 - **Recomendaciones Ejecutivas**: Acciones específicas para la dirección
 - **ROI Cuantificado**: Impacto financiero del proceso QA
+- **Arquitectura Optimizada**: Backend con caché y fallback de datos
 
 ## 📊 Funcionalidades
 
@@ -46,6 +47,36 @@ Dashboard de control de calidad y trazabilidad del proceso de pruebas para direc
 - **Iconos**: Lucide React
 - **Fechas**: date-fns
 - **Animaciones**: Framer Motion
+- **Data Loading**: Custom ESM/CJS loader with 5-min cache & fallback data
+
+## 🏗️ Arquitectura
+
+### Backend Data Layer
+```
+pages/api/qa-data.js
+    ↓
+lib/qaDataLoader.js (NEW - Centralized)
+    ├─ Attempts JSON (public/data/qa-data.json)
+    ├─ Falls back to Excel (data/Reporte_QA_V1.xlsx)
+    ├─ Built-in seed data as final fallback
+    └─ 5-minute caching for performance
+```
+
+**Benefits:**
+- **Single Source**: All QA data flows through `qaDataLoader`
+- **Resilient**: Multiple data sources with graceful degradation
+- **Performant**: 5-minute in-memory cache prevents file I/O on every request
+- **Maintainable**: Complex loading logic isolated from API handlers
+
+### Frontend Components
+```
+ExecutiveDashboard (pages/index.js)
+    ├─ RiskMatrix.js          (enhanced UX, a11y, responsive)
+    ├─ SprintTrendChart.js    (optimized visuals, multi-axis)
+    ├─ ModuleAnalysis.js
+    ├─ QualityMetrics.js
+    └─ ExecutiveRecommendations.js
+```
 
 ## ⚙️ Configuración
 

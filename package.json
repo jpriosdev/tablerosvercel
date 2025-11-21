@@ -3,8 +3,9 @@
     "version": "1.0.0",
     "private": true,
     "scripts": {
-        "dev": "next dev",
-        "build": "next build",
+        "generate-json": "node scripts/generateQAJson.js",
+        "dev": "npm run generate-json && next dev",
+        "build": "npm run generate-json && next build",
         "start": "next start",
         "lint": "next lint"
     },

@@ -1,7 +1,20 @@
-// utils/dataProcessor.js
+/**
+ * QADataProcessor
+ * Centralized data processing and transformation for QA metrics.
+ * Handles KPI calculation, trend analysis, alerts, recommendations.
+ * 
+ * Stateless utility class - all methods are static and deterministic.
+ */
+
 export class QADataProcessor {
+  /**
+   * Main processor: transforms raw QA data into dashboard-ready metrics
+   * @param {Object} rawData - Raw QA data from API/Excel
+   * @param {Object} config - Configuration with weights, thresholds, etc.
+   * @returns {Object} Processed data with KPIs, trends, alerts, recommendations
+   */
   static processQAData(rawData, config = {}) {
-    // Configuración por defecto
+    // Default configuration with sensible thresholds
     const defaultConfig = {
       weights: {
         resolutionRate: 0.3,
@@ -38,6 +51,7 @@ export class QADataProcessor {
     const bugsClosed = rawData.summary?.bugsClosed || 0;
     const bugsPending = rawData.summary?.bugsPending || 0;
     
+    // Aggregate processed data
     const processedData = {
       ...rawData,
       

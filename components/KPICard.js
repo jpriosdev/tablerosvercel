@@ -1,3 +1,21 @@
+/**
+ * KPICard Component
+ * Displays a single KPI metric with optional trend, status indicator, and tooltip.
+ * Supports sparklines, formulas, and click handlers for drill-down.
+ * 
+ * @param {Object} props
+ * @param {string} props.title - KPI name
+ * @param {string|number} props.value - KPI value to display
+ * @param {JSX.Element} props.icon - Icon component
+ * @param {number} props.trend - Trend percentage (positive/negative)
+ * @param {string} props.status - 'success' | 'warning' | 'danger' | 'neutral'
+ * @param {string} props.subtitle - Optional description
+ * @param {string} props.formula - Optional formula explanation
+ * @param {string} props.tooltip - Optional hover tooltip text
+ * @param {Function} props.onClick - Click handler
+ * @param {Array} props.sparklineData - Data for mini sparkline chart
+ * @param {boolean} props.isEstimated - Shows (est.) badge if true
+ */
 import { TrendingUp, TrendingDown, Info, ChevronRight, Construction } from 'lucide-react';
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
@@ -21,6 +39,7 @@ export default function KPICard({
   
   const isClickable = onClick || detailData;
   
+  /** Map status to Tailwind classes for consistent styling */
   const getStatusStyles = () => {
     switch (status) {
       case 'success':

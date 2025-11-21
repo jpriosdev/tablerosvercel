@@ -1,3 +1,9 @@
+/**
+ * SprintTrendChart Component
+ * Visualizes sprint trends for bugs found, resolved, and test cases executed
+ * using multi-axis line chart for side-by-side metric comparison.
+ * @param {Array} data - Sprint data array with {sprint, bugs, bugsResolved, testCases, change}
+ */
 import { Line } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -20,6 +26,13 @@ ChartJS.register(
   Legend
 );
 
+/** Chart color scheme constants */
+const COLORS = {
+  bugsFound: '#ef4444',
+  bugsResolved: '#22c55e',
+  testCases: '#3b82f6',
+};
+
 export default function SprintTrendChart({ data }) {
   const chartData = {
     labels: data.map(item => item.sprint || item.name || `Sprint ${item.id}`),
@@ -27,26 +40,32 @@ export default function SprintTrendChart({ data }) {
       {
         label: 'Bugs Encontrados',
         data: data.map(item => item.bugs),
-        borderColor: '#ef4444',
+        borderColor: COLORS.bugsFound,
         backgroundColor: 'rgba(239, 68, 68, 0.1)',
         tension: 0.4,
         fill: true,
+        pointRadius: 4,
+        pointHoverRadius: 6,
       },
       {
         label: 'Bugs Resueltos',
         data: data.map(item => item.bugsResolved),
-        borderColor: '#22c55e',
+        borderColor: COLORS.bugsResolved,
         backgroundColor: 'rgba(34, 197, 94, 0.1)',
         tension: 0.4,
         fill: true,
+        pointRadius: 4,
+        pointHoverRadius: 6,
       },
       {
         label: 'Casos de Prueba',
         data: data.map(item => item.testCases),
-        borderColor: '#3b82f6',
+        borderColor: COLORS.testCases,
         backgroundColor: 'rgba(59, 130, 246, 0.1)',
         tension: 0.4,
         yAxisID: 'y1',
+        pointRadius: 4,
+        pointHoverRadius: 6,
       }
     ],
   };
@@ -115,8 +134,8 @@ export default function SprintTrendChart({ data }) {
   };
 
   return (
-    <div className="executive-card">
-      <div className="chart-container">
+    <div className="executive-card" role="region" aria-label="Sprint Quality Trends">
+      <div className="chart-container" style={{ minHeight: '400px' }}>
         <Line data={chartData} options={options} />
       </div>
     </div>

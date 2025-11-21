@@ -11,6 +11,10 @@ const nextConfig = {
     },
     env: {
       CUSTOM_KEY: 'QA_DASHBOARD_2024',
+    },
+    onDemandEntries: {
+      maxInactiveAge: 60 * 1000,
+      pagesBufferLength: 5,
     }
   }
   

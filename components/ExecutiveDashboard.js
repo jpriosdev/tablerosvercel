@@ -53,6 +53,19 @@ export default function ExecutiveDashboard({
   const [error, setError] = useState(null);
   const [recommendations, setRecommendations] = useState(null);
   const [useParametricMode, setUseParametricMode] = useState(false);
+  const [isEditingLayout, setIsEditingLayout] = useState(false);
+  const [kpiOrder, setKpiOrder] = useState([
+    'cobertura',
+    'matrizRiesgo',
+    'densidad',
+    'bugsCriticos',
+    'criticosPendientes',
+    'tiempoSolucion',
+    'velocidadFixes',
+    'bugLeakage',
+    'completitud',
+    'automatizacion'
+  ]);
 
   // Determinar qué datos usar
   const isParametricMode = useParametricMode && !externalData;
@@ -598,6 +611,40 @@ function OverviewTab({ data, recommendations }) {
     });
   };
 
+  // Renderizar KPI card basado en ID
+  const renderKpiCard = (kpiId) => {
+    switch(kpiId) {
+      case 'cobertura':
+        return (
+          <KPICard
+            key="cobertura"
+            title="Cobertura de Pruebas"
+            value={avgTestCasesPerSprint}
+            icon={<Activity className="w-6 h-6 text-blue-600" />}
+            trend={testCasesTrend}
+            status={avgTestCasesPerSprint >= 170 ? "success" : "warning"}
+            subtitle={`${totalTestCases} pruebas totales ejecutadas`}
+            formula={`${avgTestCasesPerSprint} pruebas/sprint promedio`}
+            tooltip={`Cobertura de Pruebas: Número de pruebas que ejecutamos cada sprint. Mayor cobertura = mejor código calidad. Meta: ≥170 pruebas/sprint`}
+            onClick={() => setDetailModal({
+              type: 'testCases',
+              title: 'Análisis de Casos de Prueba Ejecutados',
+              data: {
+                avg: avgTestCasesPerSprint,
+                total: totalTestCases,
+                sprints: filteredSprintData?.length || 0
+              },
+              sparklineData: getSparklineData('testCases'),
+              sprints: filteredSprintData
+            })}
+            detailData={{ avg: avgTestCasesPerSprint, total: totalTestCases }}
+          />
+        );
+      default:
+        return null;
+    }
+  };
+
   return (
     <div className="space-y-8">
       {/* Filtro de Sprints con Checkboxes */}
@@ -701,19 +748,19 @@ function OverviewTab({ data, recommendations }) {
           detailData={{ avg: avgTestCasesPerSprint, total: totalTestCases }}
         />
         
-        {/* 2. CALIDAD DEL PRODUCTO: Densidad de Defectos */}
+        {/* 2. CALIDAD DEL PRODUCTO: Densidad de Hallazgos */}
         <KPICard
-          title="Densidad de Defectos por Sprint"
+          title="Densidad de Hallazgos por Sprint"
           value={defectDensityData.avg}
           icon={<Target className="w-6 h-6 text-orange-600" />}
           trend={defectDensityData.avg <= 20 ? 5 : -5}
           status={defectDensityData.avg <= 20 ? "success" : defectDensityData.avg <= 30 ? "warning" : "danger"}
-          subtitle={`Máx: ${defectDensityData.max} | Mín: ${defectDensityData.min} bugs/sprint`}
-          formula={`Promedio = ${defectDensityData.total} bugs / ${defectDensityData.sprints} sprints`}
-          tooltip={"Densidad de Defectos por Sprint: Promedio de bugs detectados por sprint. Objetivo: ≤20 bugs/sprint indica buena calidad. >30 requiere revisión de procesos de desarrollo y testing."}
+          subtitle={`Máx: ${defectDensityData.max} | Mín: ${defectDensityData.min} hallazgos/sprint`}
+          formula={`Promedio = ${defectDensityData.total} hallazgos / ${defectDensityData.sprints} sprints`}
+          tooltip={"Densidad de Hallazgos por Sprint: Promedio de hallazgos detectados por sprint. Objetivo: ≤20 hallazgos/sprint indica buena calidad. >30 requiere revisión de procesos de desarrollo y testing."}
           onClick={() => setDetailModal({
             type: 'defectDensity',
-            title: 'Análisis de Densidad de Defectos por Sprint',
+            title: 'Análisis de Densidad de Hallazgos por Sprint',
             data: defectDensityData,
             sparklineData: getSparklineData('defectDensity'),
             sprints: filteredSprintData
@@ -721,42 +768,36 @@ function OverviewTab({ data, recommendations }) {
           detailData={defectDensityData}
         />
         
-        {/* 3. VELOCIDAD: Tiempo Promedio de Resolución */}
-        <KPICard
-          title="Tiempo Promedio de Resolución"
-          value={`${cycleTimeData.avg} días`}
-          icon={<Clock className="w-6 h-6 text-executive-600" />}
-          trend={cycleTimeData.avg <= 7 ? 10 : -10}
-          status={cycleTimeData.avg <= 7 ? "success" : cycleTimeData.avg <= 10 ? "warning" : "danger"}
-          subtitle={`Críticos: ${cycleTimeData.byPriority.critical}d | Altos: ${cycleTimeData.byPriority.high}d`}
-          formula={`Basado en eficiencia: ${resolutionEfficiency}%`}
-          tooltip={"Tiempo de Ciclo: Tiempo promedio desde la detección hasta la resolución de bugs. Métrica clave para medir la velocidad de respuesta del equipo. Objetivo: ≤7 días para mantener agilidad."}
-          onClick={() => setDetailModal({
-            type: 'cycleTime',
-            title: 'Análisis Detallado de Tiempo de Resolución',
-            data: cycleTimeData,
-            sparklineData: getSparklineData('cycleTime'),
-            sprints: filteredSprintData
-          })}
-          detailData={cycleTimeData}
-        />
+        {/* 3. TASA DE EJECUCIÓN */}
+        {kpis.testExecutionRate && (
+          <KPICard
+            title="Tasa de Ejecución"
+            value={`${kpis.testExecutionRate}%`}
+            icon={<Activity className="w-6 h-6 text-blue-600" />}
+            trend={0}
+            status={kpis.testExecutionRate >= 95 ? "success" : kpis.testExecutionRate >= 80 ? "warning" : "danger"}
+            subtitle="Pruebas ejecutadas vs planeadas"
+            formula={`Ejecución = Pruebas ejecutadas / Pruebas planeadas × 100`}
+            tooltip={"La tasa de ejecución muestra el porcentaje de casos de prueba ejecutados respecto al total planificado. Indica el nivel de cobertura alcanzado. Objetivo: ≥95%."}
+          />
+        )}
       </div>
 
       {/* Segunda fila - Métricas de seguimiento */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {/* 1. RIESGO CRÍTICO: Bugs Críticos Detectados */}
+        {/* 1. RIESGO CRÍTICO: Hallazgos Críticos Detectados */}
         <KPICard
-          title="Bugs Críticos Detectados"
+          title="Hallazgos Críticos Detectados"
           value={criticalBugsTotal}
           icon={<Bug className="w-6 h-6 text-danger-600" />}
           trend={criticalBugsTrend}
           status={criticalBugsTotal <= 20 ? "success" : "danger"}
-          subtitle={`${Math.round((criticalBugsTotal / totalBugs) * 100)}% del total de bugs`}
+          subtitle={`${Math.round((criticalBugsTotal / totalBugs) * 100)}% del total de hallazgos`}
           formula={`Críticos = Más alta (${criticalBugsMasAlta}) + Alta (${criticalBugsAlta})`}
-          tooltip={"Total de bugs críticos detectados con prioridad 'Más alta' y 'Alta'. Indica el volumen de incidencias graves que requieren atención inmediata."}
+          tooltip={"Total de hallazgos críticos detectados con prioridad 'Más alta' y 'Alta'. Indica el volumen de incidencias graves que requieren atención inmediata."}
           onClick={() => setDetailModal({
             type: 'criticalBugs',
-            title: 'Análisis de Bugs Críticos Detectados',
+            title: 'Análisis de Hallazgos Críticos Detectados',
             data: {
               total: criticalBugsTotal,
               highest: criticalBugsMasAlta,
@@ -770,19 +811,19 @@ function OverviewTab({ data, recommendations }) {
           detailData={{ total: criticalBugsTotal }}
         />
         
-        {/* 2. SEGUIMIENTO CRÍTICO: Estado de Bugs Críticos */}
+        {/* 2. SEGUIMIENTO CRÍTICO: Estado de Hallazgos Críticos */}
         <KPICard
-          title="Estado Bugs Críticos"
+          title="Estado Hallazgos Críticos"
           value={`${criticalBugsPending}`}
           icon={<AlertTriangle className="w-6 h-6 text-warning-600" />}
           trend={criticalBugsTrend}
           status={criticalBugsPending <= 10 ? "success" : "danger"}
           subtitle={`${criticalBugsTotal - criticalBugsPending} resueltos de ${criticalBugsTotal} críticos`}
           formula={`Pendientes = ${criticalBugsPending} | Resueltos = ${criticalBugsTotal - criticalBugsPending}`}
-          tooltip={"Estado de los bugs críticos: muestra cuántos están pendientes y cuántos ya fueron resueltos. Los pendientes requieren atención inmediata para no bloquear releases."}
+          tooltip={"Estado de los hallazgos críticos: muestra cuántos están pendientes y cuántos ya fueron resueltos. Los pendientes requieren atención inmediata para no bloquear releases."}
           onClick={() => setDetailModal({
             type: 'criticalBugsStatus',
-            title: 'Estado de Bugs Críticos',
+            title: 'Estado de Hallazgos Críticos',
             data: {
               total: criticalBugsTotal,
               pending: criticalBugsPending,
@@ -797,7 +838,27 @@ function OverviewTab({ data, recommendations }) {
           detailData={{ pending: criticalBugsPending }}
         />
         
-        {/* 3. EFICIENCIA: Eficiencia de Resolución */}
+        {/* 3. VELOCIDAD: Tiempo Promedio de Resolución */}
+        <KPICard
+          title="Tiempo Promedio de Resolución"
+          value={`${cycleTimeData.avg} días`}
+          icon={<Clock className="w-6 h-6 text-executive-600" />}
+          trend={cycleTimeData.avg <= 7 ? 10 : -10}
+          status={cycleTimeData.avg <= 7 ? "success" : cycleTimeData.avg <= 10 ? "warning" : "danger"}
+          subtitle={`Críticos: ${cycleTimeData.byPriority.critical}d | Altos: ${cycleTimeData.byPriority.high}d`}
+          formula={`Basado en eficiencia: ${resolutionEfficiency}%`}
+          tooltip={"Tiempo de Ciclo: Tiempo promedio desde la detección hasta la resolución de hallazgos. Métrica clave para medir la velocidad de respuesta del equipo. Objetivo: ≤7 días para mantener agilidad."}
+          onClick={() => setDetailModal({
+            type: 'cycleTime',
+            title: 'Análisis Detallado de Tiempo de Resolución',
+            data: cycleTimeData,
+            sparklineData: getSparklineData('cycleTime'),
+            sprints: filteredSprintData
+          })}
+          detailData={cycleTimeData}
+        />
+        
+        {/* 4. EFICIENCIA: Eficiencia de Resolución */}
         <KPICard
           title="Eficiencia de Resolución"
           value={`${resolutionEfficiency}%`}
@@ -806,7 +867,7 @@ function OverviewTab({ data, recommendations }) {
           status={resolutionEfficiency >= 70 ? "success" : "warning"}
           subtitle={`${bugsClosed} resueltos de ${totalBugs} total (${totalBugs - bugsClosed} abiertos)`}
           formula={`Eficiencia = ${bugsClosed} / ${totalBugs} × 100`}
-          tooltip={"La eficiencia de resolución mide el porcentaje de bugs solucionados respecto al total reportado. Es clave para evaluar la capacidad del equipo de cerrar incidencias y mantener la calidad del producto."}
+          tooltip={"La eficiencia de resolución mide el porcentaje de hallazgos solucionados respecto al total reportado. Es clave para evaluar la capacidad del equipo de cerrar incidencias y mantener la calidad del producto."}
           onClick={() => setDetailModal({
             type: 'resolutionEfficiency',
             title: 'Análisis de Eficiencia de Resolución',
@@ -851,11 +912,12 @@ function OverviewTab({ data, recommendations }) {
           <KPICard
             title="Tasa de Ejecución"
             value={`${kpis.testExecutionRate}%`}
-            icon={<Activity className="w-6 h-6 text-purple-600" />}
+            icon={<Activity className="w-6 h-6 text-blue-600" />}
             trend={0}
-            status="info"
-            subtitle="Pruebas ejecutadas"
-            tooltip={"La tasa de ejecución muestra el porcentaje de casos de prueba ejecutados respecto al total planificado. Indica el nivel de cobertura alcanzado."}
+            status={kpis.testExecutionRate >= 95 ? "success" : kpis.testExecutionRate >= 80 ? "warning" : "danger"}
+            subtitle="Pruebas ejecutadas vs planeadas"
+            formula={`Ejecución = Pruebas ejecutadas / Pruebas planeadas × 100`}
+            tooltip={"La tasa de ejecución muestra el porcentaje de casos de prueba ejecutados respecto al total planificado. Indica el nivel de cobertura alcanzado. Objetivo: ≥95%."}
           />
         )}
         
@@ -866,8 +928,8 @@ function OverviewTab({ data, recommendations }) {
             icon={<TrendingUp className="w-6 h-6 text-red-600" />}
             trend={0}
             status={kpis.bugLeakageRate <= 5 ? "success" : "danger"}
-            subtitle="Bugs en producción"
-            tooltip={"La tasa de fuga mide el porcentaje de bugs que escaparon a producción. Un valor bajo indica buena calidad de pruebas pre-producción."}
+            subtitle="Hallazgos en producción"
+            tooltip={"La tasa de fuga mide el porcentaje de hallazgos que escaparon a producción. Un valor bajo indica buena calidad de pruebas pre-producción."}
           />
         )}
       </div>

@@ -1,4 +1,7 @@
-// pages/index.js
+/**
+ * Home/Redirect Page
+ * Redirects all traffic to the QA dashboard.
+ */
 import { useEffect } from 'react';
 import { useRouter } from 'next/router';
 
@@ -6,7 +9,7 @@ export default function Home() {
   const router = useRouter();
 
   useEffect(() => {
-    // Redirige automáticamente a /qa-dashboard
+    // Auto-redirect to dashboard (non-blocking if already there)
     router.push('/qa-dashboard');
   }, [router]);
 
