@@ -56,16 +56,18 @@ export default function KPICard({
   return (
     <div 
       className={`kpi-card relative ${getStatusStyles()} ${
-        isClickable ? 'cursor-pointer hover:-translate-y-1 hover:shadow-2xl transition-all duration-300' : ''
+        isClickable ? 'cursor-pointer hover:-translate-y-0.5 hover:shadow-lg transition-all duration-300' : ''
       }`}
       onClick={onClick}
     >
-      <div className="flex items-center justify-between mb-2">
-        {icon}
+      <div className="flex items-center justify-between mb-1">
+        <div className="w-5 h-5 flex items-center justify-center">
+          {icon}
+        </div>
         <div className="relative">
           {tooltip && (
             <span
-              className="ml-2 cursor-pointer"
+              className="ml-0.5 cursor-pointer"
               onClick={(e) => e.stopPropagation()}
               onMouseEnter={e => {
                 const rect = e.currentTarget.getBoundingClientRect();
@@ -74,7 +76,7 @@ export default function KPICard({
               }}
               onMouseLeave={() => setShowTooltip(false)}
             >
-              <Info className="w-3.5 h-3.5 text-gray-400 hover:text-blue-500" />
+              <Info className="w-3 h-3 text-gray-400 hover:text-blue-500" />
             </span>
           )}
           {tooltip && showTooltip && createPortal(
@@ -101,37 +103,37 @@ export default function KPICard({
         </div>
       </div>
       {trend !== undefined && (
-        <div className={`flex items-center text-sm font-medium ${
+        <div className={`flex items-center text-xs font-medium mt-0.5 mb-0.5 ${
           trend > 0 ? 'text-green-600' : trend < 0 ? 'text-red-600' : 'text-gray-600'
         }`}>
           {trend > 0 ? (
-            <TrendingUp className="w-4 h-4 mr-1" />
+            <TrendingUp className="w-2.5 h-2.5 mr-0.5" />
           ) : trend < 0 ? (
-            <TrendingDown className="w-4 h-4 mr-1" />
+            <TrendingDown className="w-2.5 h-2.5 mr-0.5" />
           ) : null}
           {trend !== 0 && `${trend > 0 ? '+' : ''}${trend}%`}
         </div>
       )}
-      <div className="flex items-center justify-between mb-1">
-        <h3 className="metric-label">{title}</h3>
+      <div className="flex items-center justify-between mb-0.5 gap-1">
+        <h3 className="metric-label text-xs leading-tight">{title}</h3>
         {isEstimated && (
-          <span className="inline-flex items-center text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full border border-orange-200">
-            <Construction className="w-3 h-3 mr-1" />
+          <span className="inline-flex items-center text-xs bg-orange-100 text-orange-700 px-1 py-0 rounded flex-shrink-0 border border-orange-200">
+            <Construction className="w-2.5 h-2.5 mr-0.5" />
             <span>*</span>
           </span>
         )}
       </div>
-      <div className="metric-value">{value}{isEstimated && <span className="text-orange-500 ml-1">*</span>}</div>
+      <div className="metric-value text-xl leading-tight">{value}{isEstimated && <span className="text-orange-500 ml-0.5">*</span>}</div>
       {formula && (
-        <div className="text-xs text-gray-400 mt-0.5">{formula}</div>
+        <div className="text-xs text-gray-400 mt-0.5 leading-tight line-clamp-2">{formula}</div>
       )}
       {subtitle && (
-        <p className="text-xs text-gray-600 mt-1">{subtitle}</p>
+        <p className="text-xs text-gray-600 mt-0.5 leading-tight line-clamp-2">{subtitle}</p>
       )}
       
       {isClickable && (
-        <div className="absolute bottom-2 right-2 text-gray-400 hover:text-[#754bde] transition-colors">
-          <ChevronRight className="w-4 h-4" />
+        <div className="absolute bottom-1 right-1 text-gray-400 hover:text-[#754bde] transition-colors">
+          <ChevronRight className="w-3 h-3" />
         </div>
       )}
     </div>

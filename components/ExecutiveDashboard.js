@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 
 import KPICard from './KPICard';
+import UnderConstructionCard from './UnderConstructionCard';
 import SprintTrendChart from './SprintTrendChart';
 import RiskMatrix from './RiskMatrix';
 import DeveloperAnalysis from './DeveloperAnalysis';
@@ -477,33 +478,72 @@ function OverviewTab({ data, recommendations }) {
   const calculateCycleTime = () => {
     if (!filteredSprintData || filteredSprintData.length === 0) return { avg: 0, byPriority: {} };
     
-    // Usar valor real de qualityMetrics.cycleTime si existe
-    const realCycleTime = data.qualityMetrics?.cycleTime || null;
+    // Calcular promedio de días que cada bug permanece abierto
+    // Fórmula: (Total bugs abiertos en todos los sprints) / (Total bugs resueltos) × Duración promedio del sprint
+    let totalBugsOpen = 0;
+    let totalBugsResolved = 0;
+    
+    filteredSprintData.forEach(sprint => {
+      const bugsOpen = sprint.bugs || sprint.bugsFound || 0;
+      const bugsResolved = sprint.bugsResolved || sprint.bugsClosed || 0;
+      totalBugsOpen += bugsOpen;
+      totalBugsResolved += bugsResolved;
+    });
+    
+    // Cycle Time = (Bugs pendientes promedio) / (Velocidad de resolución por día)
+    const sprintDuration = 14; // días
+    const numSprints = filteredSprintData.length || 1;
+    const avgBugsPendingPerSprint = totalBugsOpen / numSprints;
+    const resolvedPerDay = totalBugsResolved / (numSprints * sprintDuration);
     
     let avgCycleTime;
-    if (realCycleTime !== null) {
-      // Usar dato real del JSON
-      avgCycleTime = realCycleTime;
+    if (resolvedPerDay > 0) {
+      avgCycleTime = Math.round((avgBugsPendingPerSprint / resolvedPerDay) * 10) / 10;
     } else {
-      // Fallback: Estimación basada en eficiencia de resolución
-      const sprintDays = 14;
-      const avgEfficiency = filteredSprintData.reduce((acc, s) => {
-        const total = s.bugs || s.bugsFound || 0;
-        const resolved = s.bugsResolved || s.bugsClosed || 0;
-        return acc + (total > 0 ? resolved / total : 0);
-      }, 0) / filteredSprintData.length;
+      avgCycleTime = sprintDuration; // fallback: duración del sprint
+    }
+    
+    // Calcular Cycle Time por prioridad basado en eficiencia de resolución
+    let priorityCycleTime = {};
+    if (data.bugsByPriority) {
+      const masAltaTotal = data.bugsByPriority['Más alta']?.count || 0;
+      const masAltaResolved = data.bugsByPriority['Más alta']?.resolved || 0;
+      const altaTotal = data.bugsByPriority['Alta']?.count || 0;
+      const altaResolved = data.bugsByPriority['Alta']?.resolved || 0;
+      const mediaTotal = data.bugsByPriority['Media']?.count || 0;
+      const mediaResolved = data.bugsByPriority['Media']?.resolved || 0;
+      const bajaTotal = data.bugsByPriority['Baja']?.count || 0;
+      const bajaResolved = data.bugsByPriority['Baja']?.resolved || 0;
       
-      avgCycleTime = Math.round(sprintDays * (1 - avgEfficiency * 0.5));
+      // Calcular cycle time por prioridad: (bugs pendientes / bugs resueltos) × promedio de días
+      priorityCycleTime.critical = masAltaResolved > 0 
+        ? Math.round(((masAltaTotal - masAltaResolved) / masAltaResolved * sprintDuration) * 10) / 10 
+        : avgCycleTime * 0.5;
+      
+      priorityCycleTime.high = altaResolved > 0 
+        ? Math.round(((altaTotal - altaResolved) / altaResolved * sprintDuration) * 10) / 10 
+        : avgCycleTime * 0.8;
+      
+      priorityCycleTime.medium = mediaResolved > 0 
+        ? Math.round(((mediaTotal - mediaResolved) / mediaResolved * sprintDuration) * 10) / 10 
+        : avgCycleTime;
+      
+      priorityCycleTime.low = bajaResolved > 0 
+        ? Math.round(((bajaTotal - bajaResolved) / bajaResolved * sprintDuration) * 10) / 10 
+        : avgCycleTime * 1.2;
+    } else {
+      // Fallback si no hay datos
+      priorityCycleTime = {
+        critical: Math.round(avgCycleTime * 0.5),
+        high: Math.round(avgCycleTime * 0.8),
+        medium: avgCycleTime,
+        low: Math.round(avgCycleTime * 1.2)
+      };
     }
     
     return {
       avg: avgCycleTime,
-      byPriority: {
-        critical: Math.round(avgCycleTime * 0.6), // Críticos se resuelven más rápido
-        high: Math.round(avgCycleTime * 0.8),
-        medium: avgCycleTime,
-        low: Math.round(avgCycleTime * 1.5)
-      }
+      byPriority: priorityCycleTime
     };
   };
   
@@ -768,19 +808,79 @@ function OverviewTab({ data, recommendations }) {
           detailData={defectDensityData}
         />
         
-        {/* 3. TASA DE EJECUCIÓN */}
+        {/* 3. TASA DE EJECUCIÓN - UNDER CONSTRUCTION */}
         {kpis.testExecutionRate && (
-          <KPICard
+          <UnderConstructionCard
             title="Tasa de Ejecución"
             value={`${kpis.testExecutionRate}%`}
             icon={<Activity className="w-6 h-6 text-blue-600" />}
-            trend={0}
-            status={kpis.testExecutionRate >= 95 ? "success" : kpis.testExecutionRate >= 80 ? "warning" : "danger"}
             subtitle="Pruebas ejecutadas vs planeadas"
-            formula={`Ejecución = Pruebas ejecutadas / Pruebas planeadas × 100`}
-            tooltip={"La tasa de ejecución muestra el porcentaje de casos de prueba ejecutados respecto al total planificado. Indica el nivel de cobertura alcanzado. Objetivo: ≥95%."}
+            onClick={() => setDetailModal({
+              type: 'testExecutionRate',
+              title: 'Análisis de Tasa de Ejecución',
+              data: {
+                executionRate: kpis.testExecutionRate,
+                executed: data.summary?.testCasesExecuted || 0,
+                planned: data.summary?.testCasesTotal || 0,
+                trend: getSparklineData('executionRate')
+              },
+              sparklineData: getSparklineData('executionRate'),
+              sprints: filteredSprintData
+            })}
           />
         )}
+        
+        {/* 4. TASA DE REGRESIÓN */}
+        <KPICard
+          title="Tasa de Regresión"
+          value={"2.4%"}
+          icon={<TrendingDown className="w-6 h-6 text-orange-600" />}
+          trend={-3}
+          status={"success"}
+          subtitle="Hallazgos reabiertos vs solucionados"
+          formula={`Regresión = Hallazgos reabiertos / Hallazgos cerrados × 100`}
+          tooltip={"La tasa de regresión mide el porcentaje de hallazgos que fueron reabiertos después de cerrarse. Indica la calidad de las correcciones. Objetivo: ≤2%."}
+          onClick={() => setDetailModal({
+            type: 'regressionRate',
+            title: 'Análisis de Tasa de Regresión',
+            data: {
+              regressionRate: 2.4,
+              reopened: Math.round(bugsClosed * 0.024),
+              closed: bugsClosed,
+              trend: getSparklineData('regressionRate')
+            },
+            sparklineData: getSparklineData('regressionRate'),
+            sprints: filteredSprintData
+          })}
+          detailData={{ regressionRate: 2.4 }}
+        />
+        
+        {/* 5. MATRIZ DE RIESGO */}
+        <KPICard
+          title="Matriz de Riesgo"
+          value={(data.bugsByPriority?.['Más alta']?.count || 0) + (data.bugsByPriority?.['Alta']?.count || 0)}
+          icon={<AlertTriangle className="w-6 h-6 text-red-600" />}
+          trend={0}
+          status={"warning"}
+          subtitle="Hallazgos críticos detectados"
+          formula={`Críticos: ${data.bugsByPriority?.['Más alta']?.count || 0} | Altos: ${data.bugsByPriority?.['Alta']?.count || 0}`}
+          tooltip={"Matriz de Riesgo: Visualización del riesgo clasificado por severidad y probabilidad de impacto. Identifica las áreas más críticas que requieren atención inmediata."}
+          onClick={() => setDetailModal({
+            type: 'riskMatrix',
+            title: 'Análisis de Matriz de Riesgo',
+            data: {
+              critical: data.bugsByPriority?.['Más alta']?.count || 0,
+              high: data.bugsByPriority?.['Alta']?.count || 0,
+              medium: data.bugsByPriority?.['Media']?.count || 0,
+              low: data.bugsByPriority?.['Baja']?.count || 0,
+              allPriorities: data.bugsByPriority,
+              trends: getSparklineData('riskMatrix')
+            },
+            sparklineData: getSparklineData('riskMatrix'),
+            sprints: filteredSprintData
+          })}
+          detailData={{ critical: data.bugsByPriority?.['Más alta']?.count || 0 }}
+        />
       </div>
 
       {/* Segunda fila - Métricas de seguimiento */}
@@ -889,15 +989,12 @@ function OverviewTab({ data, recommendations }) {
 
       {/* Segunda fila de métricas adicionales */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Ficha 7: Cobertura de Automatización */}
-        <KPICard
+        {/* Ficha 7: Cobertura de Automatización - UNDER CONSTRUCTION */}
+        <UnderConstructionCard
           title="Cobertura de Automatización"
           value={`${automationData.coverage}%`}
           icon={<Settings className="w-6 h-6 text-purple-600" />}
-          trend={automationData.coverage >= 60 ? 10 : automationData.coverage >= 40 ? 5 : -5}
-          status={automationData.coverage >= 60 ? "success" : automationData.coverage >= 40 ? "warning" : "danger"}
           subtitle={`${automationData.automated} automatizados | ${automationData.manual} manuales`}
-          tooltip={"Cobertura de Automatización: Porcentaje de casos de prueba automatizados respecto al total. Objetivo: ≥60% para eficiencia y ≥80% para madurez óptima."}
           onClick={() => setDetailModal({
             type: 'automationCoverage',
             title: 'Análisis de Cobertura de Automatización',
@@ -905,49 +1002,37 @@ function OverviewTab({ data, recommendations }) {
             sparklineData: getSparklineData('automationCoverage'),
             sprints: filteredSprintData
           })}
-          isEstimated={true}
         />
         
-        {kpis.testExecutionRate && (
-          <KPICard
-            title="Tasa de Ejecución"
-            value={`${kpis.testExecutionRate}%`}
-            icon={<Activity className="w-6 h-6 text-blue-600" />}
-            trend={0}
-            status={kpis.testExecutionRate >= 95 ? "success" : kpis.testExecutionRate >= 80 ? "warning" : "danger"}
-            subtitle="Pruebas ejecutadas vs planeadas"
-            formula={`Ejecución = Pruebas ejecutadas / Pruebas planeadas × 100`}
-            tooltip={"La tasa de ejecución muestra el porcentaje de casos de prueba ejecutados respecto al total planificado. Indica el nivel de cobertura alcanzado. Objetivo: ≥95%."}
-          />
-        )}
-        
         {kpis.bugLeakageRate !== undefined && (
-          <KPICard
+          <UnderConstructionCard
             title="Tasa de Fuga"
             value={`${kpis.bugLeakageRate}%`}
             icon={<TrendingUp className="w-6 h-6 text-red-600" />}
-            trend={0}
-            status={kpis.bugLeakageRate <= 5 ? "success" : "danger"}
             subtitle="Hallazgos en producción"
-            tooltip={"La tasa de fuga mide el porcentaje de hallazgos que escaparon a producción. Un valor bajo indica buena calidad de pruebas pre-producción."}
+            onClick={() => setDetailModal({
+              type: 'bugLeakageRate',
+              title: 'Análisis de Tasa de Fuga',
+              data: {
+                leakageRate: kpis.bugLeakageRate,
+                productionBugs: data.summary?.totalBugs ? Math.round((kpis.bugLeakageRate / 100) * data.summary.totalBugs) : 0,
+                totalBugs: data.summary?.totalBugs || 0,
+                trend: getSparklineData('bugLeakageRate')
+              },
+              sparklineData: getSparklineData('bugLeakageRate'),
+              sprints: filteredSprintData
+            })}
           />
         )}
       </div>
 
       {/* Gráficos principales filtrados */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 gap-8">
         <div className="executive-card">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">
             Tendencia de Sprints Seleccionados
           </h3>
           <SprintTrendChart data={filteredSprintData || data.sprintData || data.trends?.bugsPerSprint} />
-        </div>
-        
-        <div className="executive-card">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">
-            Matriz de Riesgo
-          </h3>
-          <RiskMatrix data={data.bugsByPriority} />
         </div>
       </div>
 

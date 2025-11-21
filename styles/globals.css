@@ -47,8 +47,9 @@
   }
   
   .kpi-card {
-    @apply bg-white rounded-xl shadow-lg border border-[#e0e0e0] p-4 hover:shadow-xl hover:border-[#ab98e5] transition-all duration-300 backdrop-blur-sm relative overflow-hidden;
+    @apply bg-white rounded-xl shadow-lg border border-[#e0e0e0] px-3 py-2.5 hover:shadow-xl hover:border-[#ab98e5] transition-all duration-300 backdrop-blur-sm relative overflow-hidden;
     background: #ffffff;
+    min-height: auto;
   }
   
   .kpi-card::before {

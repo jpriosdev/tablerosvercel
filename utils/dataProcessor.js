@@ -519,16 +519,44 @@ export class QADataProcessor {
   }
 
   static calculateAverageResolutionTime(data) {
-    if (!data.bugResolutionTimes || data.bugResolutionTimes.length === 0) {
-      // Estimación basada en otros datos disponibles
-      const totalBugs = data.summary?.totalBugs || 0;
-      const sprintDuration = 14; // días
-      const sprints = data.sprintData?.length || 1;
-      return Math.round((sprints * sprintDuration) / Math.max(totalBugs, 1));
+    // Si tenemos datos reales de tiempo de resolución
+    if (data.bugResolutionTimes && data.bugResolutionTimes.length > 0) {
+      const total = data.bugResolutionTimes.reduce((sum, time) => sum + time, 0);
+      return Math.round(total / data.bugResolutionTimes.length);
     }
     
-    const total = data.bugResolutionTimes.reduce((sum, time) => sum + time, 0);
-    return Math.round(total / data.bugResolutionTimes.length);
+    // Cálculo basado en sprints y bugs cerrados
+    if (data.sprintData && data.sprintData.length > 0) {
+      // Calcular promedio de días por sprint y bugs resueltos por sprint
+      const sprintDuration = 14; // días estándar por sprint
+      
+      let totalBugsResolved = 0;
+      let totalSprintDays = 0;
+      
+      data.sprintData.forEach(sprint => {
+        const bugsResolved = sprint.bugsResolved || sprint.bugsCerrados || 0;
+        totalBugsResolved += bugsResolved;
+        totalSprintDays += sprintDuration;
+      });
+      
+      // Cycle Time = (Total de días) / (Total de bugs resueltos)
+      // Ej: 84 días (6 sprints) / 57 bugs resueltos = 1.47 días promedio
+      if (totalBugsResolved > 0) {
+        return Math.round((totalSprintDays / totalBugsResolved) * 10) / 10;
+      }
+    }
+    
+    // Fallback: estimación simple
+    const totalBugs = data.summary?.totalBugs || 0;
+    const bugsClosed = data.summary?.bugsClosed || 0;
+    const sprintDuration = 14; // días
+    const sprints = data.sprintData?.length || 1;
+    
+    if (bugsClosed > 0) {
+      return Math.round((sprints * sprintDuration) / bugsClosed * 10) / 10;
+    }
+    
+    return 7; // Valor por defecto
   }
 
   static calculateTestExecutionRate(data) {
