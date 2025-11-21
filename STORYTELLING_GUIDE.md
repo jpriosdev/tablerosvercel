@@ -18,17 +18,17 @@ Este dashboard responde cada pregunta en orden, con lenguaje ejecutivo claro y s
 
 **Fichas:**
 1. **Cobertura de Pruebas** (170 pruebas/sprint)
-   - *¿Qué es?* Número de pruebas que ejecutamos.
+    - *¿Qué mide?* Número de pruebas que ejecutamos.
    - *¿Por qué?* Más pruebas = mejor cobertura = menos sorpresas.
    - *Acción:* Meta ≥170.
 
 2. **Pruebas Automatizadas** (45%)
-   - *¿Qué es?* % de pruebas que hacen los robots vs mano.
+    - *¿Qué mide?* % de pruebas que hacen los robots vs mano.
    - *¿Por qué?* 60%+ = deploy cada 2 semanas. <40% = release lento.
    - *Acción:* Necesitamos invertir en automatización.
 
 3. **Completitud Sprint** (92%)
-   - *¿Qué es?* % de pruebas planificadas que realmente ejecutamos.
+    - *¿Qué mide?* % de pruebas planificadas que realmente ejecutamos.
    - *¿Por qué?* Si falta algo = "puntos ciegos" = bugs en prod.
    - *Acción:* Meta ≥95%.
 
@@ -41,17 +41,17 @@ Este dashboard responde cada pregunta en orden, con lenguaje ejecutivo claro y s
 
 **Fichas:**
 1. **Bugs Críticos Encontrados** (35 bugs)
-   - *¿Qué es?* Bugs que podrían bloquear un usuario o perder datos.
+    - *¿Qué mide?* Bugs que podrían bloquear un usuario o perder datos.
    - *¿Por qué?* Si hay muchos críticos, NO desplegamos.
    - *Acción:* Meta ≤20 bugs críticos.
 
 2. **🚫 Críticos SIN RESOLVER** (8 pending)
-   - *¿Qué es?* Bugs críticos que aún no arreglaron.
+    - *¿Qué mide?* Bugs críticos que aún no arreglaron.
    - *¿Por qué?* **ESTO BLOQUEA LA RELEASE HOY.**
    - *Acción:* Goal = 0. Dev team en crisis.
 
 3. **Matriz de Riesgo General** (138 bugs total)
-   - *¿Qué es?* Distribución: 7 críticos + 41 altos + 82 medios + 8 bajos.
+    - *¿Qué mide?* Distribución: 7 críticos + 41 altos + 82 medios + 8 bajos.
    - *¿Por qué?* Entender el perfil de riesgo.
    - *Acción:* Haz click para drill-down.
 
@@ -64,18 +64,18 @@ Este dashboard responde cada pregunta en orden, con lenguaje ejecutivo claro y s
 
 **Fichas:**
 1. **Densidad de Hallazgos** (19.69%)
-   - *¿Qué es?* De cada 100 pruebas, cuántas encontramos un bug.
+    - *¿Qué mide?* De cada 100 pruebas, cuántas encontramos un bug.
    - *¿Por qué?* Si alto = código de baja calidad. Si bajo = buena calidad.
    - *Estándar industrial:* <10% = excelente, 10-30% = bueno, 30-50% = alerta, >50% = crisis.
    - *Acción:* Nuestro 19.69% = BUENO. Seguir así.
 
 2. **Velocidad de Fixes** (73%)
-   - *¿Qué es?* % de bugs que ya arreglaron vs todos.
+    - *¿Qué mide?* % de bugs que ya arreglaron vs todos.
    - *¿Por qué?* Si arreglan rápido = código limpio. Si lento = acumulan bugs.
    - *Acción:* Meta ≥70%. Vamos bien.
 
 3. **Tiempo para Arreglar Bugs** (8 días)
-   - *¿Qué es?* Cuántos días tarda dev en arreglar un bug desde que lo reportamos.
+    - *¿Qué mide?* Cuántos días tarda dev en arreglar un bug desde que lo reportamos.
    - *¿Por qué?* Si es 14 días = bug queda viejito en prod. Si es 3 = rápido.
    - *Acción:* Meta ≤7 días. Estamos un poco alto.
 
@@ -96,7 +96,7 @@ Este dashboard responde cada pregunta en orden, con lenguaje ejecutivo claro y s
    - Lee: ¿Dónde está concentrado el riesgo?
 
 3. **Bugs que Escapan a Producción**
-   - *¿Qué es?* % de bugs que los usuarios encuentran (nosotros no vimos).
+    - *¿Qué mide?* % de bugs que los usuarios encuentran (nosotros no vimos).
    - *¿Por qué?* Si muchos escapan = pruebas insuficientes.
    - *Acción:* Meta <5%.
 
@@ -145,15 +145,15 @@ ACT 4 (Tendencia)
 **Cada ficha tiene un icono `?` en la esquina superior derecha.**
 
 Al hacer hover:
-1. **¿QÉ ES?** - Explicación sin jerga
+1. **¿QUÉ MIDE?** - Explicación sin jerga
 2. **¿POR QUÉ IMPORTA?** - Impacto de negocio
 3. **NUESTRO VALOR** - Tu métrica actual + interpretación
 4. **META** - Hacia dónde deberías apuntar
 
 ### Ejemplo: Cobertura de Pruebas = 170
 ```
-¿QUÉ ES? 
-  → Número de pruebas que ejecutamos cada sprint.
+¿QUÉ MIDE? 
+    → Número de pruebas que ejecutamos cada sprint.
 
 ¿POR QUÉ? 
   → Más pruebas = mejor cobertura = menos bugs en producción.
@@ -188,19 +188,19 @@ Cada ficha cambia de color según el estado:
 - ✅ Críticos sin resolver ≤ 5
 - ✅ Completitud ≥ 80%
 - ✅ Densidad de hallazgos normal (10-30%)
-- ✅ Tendencia estable o mejorando
+    - *¿Qué mide?* Número de pruebas que ejecutamos.
 
 **Respuesta es NO si:**
 - 🔴 Críticos sin resolver > 15
 - 🔴 Bugs que escapan > 10% (muchos bugs viejos en prod)
 - 🔴 Velocidad de fixes < 50%
-
+    - *¿Qué mide?* % de pruebas que hacen los robots vs mano.
 ### Decisión 2: ¿NECESITAMOS INVERTIR?
 
 **Invertir en Automatización si:**
 - Pruebas automatizadas < 50%
 - Release dura >3 semanas
-- Mismo equipo hace pruebas manuales siempre
+    - *¿Qué mide?* % de pruebas planificadas que realmente ejecutamos.
 
 **Inversión esperada:**
 - 2-3 sprints para infraestructura
@@ -210,19 +210,19 @@ Cada ficha cambia de color según el estado:
 
 **Si falta cobertura:**
 - Aumentar # de pruebas (Act 1)
-- Automatizar más (Act 1)
+    - *¿Qué mide?* Bugs que podrían bloquear un usuario o perder datos.
 
 **Si falta velocidad:**
 - Acelerar time-to-fix (Act 3)
 - Menos bugs críticos (Act 2)
 
-**Si falta calidad:**
+    - *¿Qué mide?* Bugs críticos que aún no arreglaron.
 - Mejorar densidad de hallazgos (Act 3)
 - Revisar: ¿Es porque pruebas mejoraron o código empeóro?
 
 ---
 
-## 📊 Casos de Uso Reales
+    - *¿Qué mide?* Distribución: 7 críticos + 41 altos + 82 medios + 8 bajos.
 
 ### Caso 1: Viernes antes de release importante
 ```
@@ -232,20 +232,20 @@ Lee ACT 2 rápido → Críticos sin resolver: 3 (OK)
 ↓
 Lee ACT 3 rápido → Densidad: 20% (BUENO)
 ↓
-Lee ACT 4 rápido → Tendencia mejorando, bugs escapan <5%
+    - *¿Qué mide?* De cada 100 pruebas, cuántas encontramos un bug.
 ↓
 DECISIÓN: "Adelante con el deploy, pero monitoreamos esos 3 críticos en prod"
 ```
 
 ### Caso 2: Lunes después de fin de semana en producción
 ```
-VP recibe slack: "Reportan bugs en producción"
+    - *¿Qué mide?* % de bugs que ya arreglaron vs todos.
 ↓
 Abre dashboard → ACT 4 "Bugs que escapan": 12% (🔴 ALTO)
 ↓
 Abre ACT 2 → "¿Cómo pasaron esos bugs?"
 ↓
-Ve tendencia (ACT 4) → Era predecible desde el jueves
+    - *¿Qué mide?* Cuántos días tarda dev en arreglar un bug desde que lo reportamos.
 ↓
 ACCIÓN: "Reunión post-mortem: ¿Qué pruebas faltaron?"
 ```
@@ -255,13 +255,12 @@ ACCIÓN: "Reunión post-mortem: ¿Qué pruebas faltaron?"
 VP en planning meeting
 ↓
 Mira ACT 1 → Automatización 45%, completes 92%
-↓
+    - *¿Qué mide?* % de bugs que los usuarios encuentran (nosotros no vimos).
 Decide: "Destinamos 40% del sprint a automatización. Necesitamos llegar a 60%"
 ↓
 Espera 3 sprints →  Automatización sube a 60% → Velocity mejora 25%
 ```
 
----
 
 ## ✅ Checklist para VP Antes de Decisión de Release
 
@@ -275,9 +274,10 @@ Espera 3 sprints →  Automatización sube a 60% → Velocity mejora 25%
 
 **Si SÍ a todas → DEPLOY SEGURO**
 **Si NO a 2+ → ESPERAR O INVESTIGAR**
-
+¿QUÉ MIDE? 
 ---
 
+1. **¿QUÉ MIDE?** - Explicación sin jerga
 ## 🚀 Conclusión
 
 Este dashboard no es técnico. Es estratégico.

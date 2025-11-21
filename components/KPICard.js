@@ -53,12 +53,38 @@ export default function KPICard({
     }
   }
   
+  const handleCardMouseEnter = (e) => {
+    if (!tooltip) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    // Compute tooltip left position; prefer right, but move left if it would overflow viewport
+    const TOOLTIP_WIDTH = 240; // px, approx width of the tooltip
+    const padding = 8;
+    let left = rect.right + padding;
+    if (left + TOOLTIP_WIDTH > (window.innerWidth - padding)) {
+      // place to the left of the card
+      left = rect.left - TOOLTIP_WIDTH - padding;
+    }
+    left = Math.max(padding, left);
+    setTooltipPos({ x: left, y: rect.top });
+    setShowTooltip(true);
+  };
+
+  const handleCardMouseLeave = () => {
+    if (!tooltip) return;
+    setShowTooltip(false);
+  };
+
   return (
     <div 
       className={`kpi-card relative ${getStatusStyles()} ${
         isClickable ? 'cursor-pointer hover:-translate-y-0.5 hover:shadow-lg transition-all duration-300' : ''
       }`}
-      onClick={onClick}
+      onClick={(e) => {
+        try { console.debug && console.debug('KPICard clicked:', title); } catch (err) {}
+        if (typeof onClick === 'function') onClick(e);
+      }}
+      onMouseEnter={handleCardMouseEnter}
+      onMouseLeave={handleCardMouseLeave}
     >
       <div className="flex items-center justify-between mb-1">
         <div className="w-5 h-5 flex items-center justify-center">
@@ -75,6 +101,15 @@ export default function KPICard({
                 setShowTooltip(true);
               }}
               onMouseLeave={() => setShowTooltip(false)}
+              onFocus={e => {
+                const rect = e.currentTarget.getBoundingClientRect();
+                setTooltipPos({ x: rect.right + 8, y: rect.top });
+                setShowTooltip(true);
+              }}
+              onBlur={() => setShowTooltip(false)}
+              tabIndex={0}
+              role="button"
+              aria-label={`Más información sobre ${title}`}
             >
               <Info className="w-3 h-3 text-gray-400 hover:text-blue-500" />
             </span>
@@ -82,20 +117,20 @@ export default function KPICard({
           {tooltip && showTooltip && createPortal(
             <div
               style={{
-                position: 'fixed',
-                left: tooltipPos.x,
-                top: tooltipPos.y,
-                zIndex: 9999,
-                background: 'white',
-                border: '1px solid #e5e7eb',
-                borderRadius: '0.5rem',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-                padding: '0.75rem',
-                fontSize: '0.875rem',
-                color: '#374151',
-                width: '16rem',
-                pointerEvents: 'none',
-              }}
+                  position: 'fixed',
+                  left: tooltipPos.x,
+                  top: tooltipPos.y,
+                  zIndex: 9999,
+                  background: 'white',
+                  border: '1px solid #e5e7eb',
+                  borderRadius: '0.5rem',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                  padding: '0.5rem',
+                  fontSize: '0.8rem',
+                  color: '#374151',
+                  width: '14rem',
+                  pointerEvents: 'none',
+                }}
             >
               {tooltip}
             </div>, document.body

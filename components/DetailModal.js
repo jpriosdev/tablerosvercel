@@ -2,6 +2,7 @@
 import React from 'react';
 import { X, TrendingUp, TrendingDown, AlertCircle, CheckCircle, BarChart3, Info, Target, Activity, Users, AlertTriangle, Bug } from 'lucide-react';
 import { RecommendationEngine } from '../utils/recommendationEngine';
+import ModuleAnalysis from './ModuleAnalysis';
 import { Line } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -146,6 +147,27 @@ export default function DetailModal({ modal, onClose, recommendations }) {
         <div className="h-40">
           <Line data={chartConfig} options={options} />
         </div>
+      </div>
+    );
+  };
+
+  const renderModuleDetail = (data) => {
+    // Ensure ModuleAnalysis receives an object keyed by module name
+    let payload = data;
+    // If data is a single module entry keyed by module name already, pass through
+    // If data contains one module under an arbitrary key, keep as-is
+    // If user passed a single module object (not keyed), try to wrap it
+    if (data && !Object.values(data).some(v => v && v.total !== undefined)) {
+      // heuristics: if object looks like a single module (has total/resolved/pending), wrap it
+      const keys = Object.keys(data || {});
+      if (keys.length > 0 && (data.total !== undefined || data.resolved !== undefined || data.pending !== undefined)) {
+        payload = { [keys[0]]: data };
+      }
+    }
+
+    return (
+      <div className="space-y-6">
+        <ModuleAnalysis data={payload} />
       </div>
     );
   };
@@ -1353,7 +1375,7 @@ export default function DetailModal({ modal, onClose, recommendations }) {
         <h3 className="text-2xl font-bold text-red-600 mb-2">
           {data.critical || 0} Hallazgos Críticos
         </h3>
-        <p className="text-sm text-gray-600">Distribución de riesgo por severidad</p>
+        <p className="text-sm text-gray-600">Distribución de criticidad por severidad</p>
       </div>
 
       {/* Matriz de desglose por prioridad */}
@@ -2049,11 +2071,11 @@ export default function DetailModal({ modal, onClose, recommendations }) {
       {/* Gráficos circulares de Pendientes y Resueltos por criticidad */}
       <div>
         <h4 className="font-semibold text-gray-800 mb-4">Distribución por Criticidad</h4>
-        <div className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Sección de Pendientes */}
           <div className="bg-warning-50 p-4 rounded-lg border border-warning-200">
             <h5 className="text-sm font-semibold text-warning-800 mb-3">Bugs Pendientes</h5>
-            <div className="flex flex-col md:flex-row gap-6 items-center">
+            <div className="flex flex-col md:flex-row gap-6 items-center justify-center">
               {/* Gráfico circular */}
               <div className="flex-shrink-0">
               <svg width="180" height="180" viewBox="0 0 180 180" className="mx-auto">
@@ -2144,7 +2166,7 @@ export default function DetailModal({ modal, onClose, recommendations }) {
           {/* Sección de Resueltos */}
           <div className="bg-success-50 p-4 rounded-lg border border-success-200">
             <h5 className="text-sm font-semibold text-success-800 mb-3">Bugs Resueltos</h5>
-            <div className="flex flex-col md:flex-row gap-6 items-center">
+            <div className="flex flex-col md:flex-row gap-6 items-center justify-center">
               {/* Gráfico circular */}
               <div className="flex-shrink-0">
               <svg width="180" height="180" viewBox="0 0 180 180" className="mx-auto">
@@ -2309,14 +2331,15 @@ export default function DetailModal({ modal, onClose, recommendations }) {
         {/* Content */}
         <div className="p-6">
           {modal.type === 'cycleTime' && renderCycleTimeDetail(modal.data)}
-          {modal.type === 'automationCoverage' && renderAutomationCoverageDetail(modal.data)}
+          {(modal.type === 'automationCoverage' || modal.type === 'testAutomation' || modal.type === 'codeCoverage') && renderAutomationCoverageDetail(modal.data)}
           {modal.type === 'defectDensity' && renderDefectDensityDetail(modal.data)}
           {modal.type === 'testCases' && renderTestCasesDetail(modal.data)}
           {modal.type === 'resolutionEfficiency' && renderResolutionEfficiencyDetail(modal.data)}
           {modal.type === 'regressionRate' && renderRegressionRateDetail(modal.data)}
-          {modal.type === 'testExecutionRate' && renderTestExecutionRateDetail(modal.data)}
+          {(modal.type === 'testExecutionRate' || modal.type === 'testEfficiency') && renderTestExecutionRateDetail(modal.data)}
           {modal.type === 'riskMatrix' && renderRiskMatrixDetail(modal.data)}
-          {modal.type === 'bugLeakageRate' && renderBugLeakageRateDetail(modal.data)}
+          {(modal.type === 'bugLeakageRate' || modal.type === 'bugLeakage') && renderBugLeakageRateDetail(modal.data)}
+          {modal.type === 'module' && renderModuleDetail(modal.data)}
           {modal.type === 'criticalBugs' && renderCriticalBugsDetail(modal.data)}
           {modal.type === 'criticalBugsStatus' && renderCriticalBugsStatusDetail(modal.data)}
         </div>

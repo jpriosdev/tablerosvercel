@@ -29,6 +29,8 @@
   
   html {
     font-family: 'Sora', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    /* Aumenta un poco el tamaño base de fuente para mejorar legibilidad */
+    font-size: 17px;
   }
   
   body {
