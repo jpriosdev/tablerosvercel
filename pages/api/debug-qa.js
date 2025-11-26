@@ -5,8 +5,8 @@ import fs from 'fs';
 export default async function handler(req, res) {
   if (req.method === 'GET') {
     try {
-      // Ruta al archivo JSON procesado
-      const jsonPath = path.join(process.cwd(), 'public/data/qa-data.json');
+      // Ruta al archivo JSON procesado (no público)
+      const jsonPath = path.join(process.cwd(), 'data', 'qa-data.json');
       
       // Verificar si el archivo existe
       if (fs.existsSync(jsonPath)) {
@@ -24,7 +24,7 @@ export default async function handler(req, res) {
         });
       } else {
         // Si no existe el JSON, intentar procesar el Excel directamente
-        const excelPath = path.join(process.cwd(), 'data/Reporte_QA_V1.xlsx');
+        const excelPath = path.join(process.cwd(), 'data', 'Reporte_QA_V1.xlsx');
         
         if (fs.existsSync(excelPath)) {
           res.status(200).json({

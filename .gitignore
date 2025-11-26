@@ -16,3 +16,15 @@ package-lock.json
 .vscode/
 .idea/
 *.log
+
+# Local archive of removed/archived files (created by repo maintenance)
+archive/
+
+# Local generated QA JSON (now generated in CI / data/)
+public/data/qa-data.json
+
+# Excel and generated artifacts
+data/*.xlsx
+
+# Backup / legacy scripts that we keep in archive only
+scripts/*.js

@@ -1,5 +1,7 @@
 // components/ExecutiveDashboard.js
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
+import Image from 'next/image';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { 
@@ -70,6 +72,24 @@ export default function ExecutiveDashboard({
   // Global detail modal state so any tab can open the same modal
   const [detailModal, setDetailModal] = useState(null);
 
+  // Tooltip state for sprint details (rendered via portal to avoid clipping)
+  const [tooltipInfo, setTooltipInfo] = useState({ visible: false, sprint: null, sprintData: null, rect: null });
+
+  const showSprintTooltip = (e, sprintKey, sprintData) => {
+    try {
+      const rect = e.currentTarget.getBoundingClientRect();
+      setTooltipInfo({ visible: true, sprint: sprintKey, sprintData, rect });
+    } catch (err) {
+      // ignore
+    }
+  };
+
+  const hideSprintTooltip = () => {
+    setTooltipInfo({ visible: false, sprint: null, sprintData: null, rect: null });
+  };
+
+  
+
   // Determinar qué datos usar
   const isParametricMode = useParametricMode && !externalData;
   const currentData = isParametricMode ? parametricData : externalData;
@@ -77,49 +97,7 @@ export default function ExecutiveDashboard({
   const currentLastUpdated = isParametricMode ? parametricLastUpdated : externalLastUpdated;
 
   // Cargar configuración para modo paramétrico
-  useEffect(() => {
-    loadConfiguration();
-    // Listen for config updates issued elsewhere in the app and reload
-    const onConfigUpdated = () => loadConfiguration();
-    if (typeof window !== 'undefined') {
-      window.addEventListener('config:updated', onConfigUpdated);
-    }
-
-    return () => {
-      if (typeof window !== 'undefined') {
-        window.removeEventListener('config:updated', onConfigUpdated);
-      }
-    };
-  }, [configSource]);
-
-  // Cargar recomendaciones al montar
-  useEffect(() => {
-    loadRecommendations();
-  }, []);
-
-  // Auto-refresh mejorado
-  useEffect(() => {
-    if (!autoRefresh) return;
-    
-    const interval = setInterval(() => {
-      if (isParametricMode) {
-        loadParametricData();
-      } else if (externalOnRefresh) {
-        externalOnRefresh();
-      }
-    }, refreshInterval);
-    
-    return () => clearInterval(interval);
-  }, [autoRefresh, isParametricMode, externalOnRefresh, refreshInterval]);
-
-  // Cargar datos paramétricos cuando hay configuración
-  useEffect(() => {
-    if (isParametricMode && config) {
-      loadParametricData();
-    }
-  }, [isParametricMode, config, dataSource]);
-
-  const loadConfiguration = async () => {
+  const loadConfiguration = useCallback(async () => {
     try {
       const response = await fetch(configSource);
       if (response.ok) {
@@ -218,17 +196,65 @@ export default function ExecutiveDashboard({
         }
       });
     }
-  };
+  }, [configSource]);
 
-  const loadParametricData = async () => {
+  useEffect(() => {
+    loadConfiguration();
+    // Listen for config updates issued elsewhere in the app and reload
+    const onConfigUpdated = () => loadConfiguration();
+    if (typeof window !== 'undefined') {
+      window.addEventListener('config:updated', onConfigUpdated);
+    }
+
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('config:updated', onConfigUpdated);
+      }
+    };
+  }, [loadConfiguration]);
+
+  // Cargar recomendaciones al montar
+  useEffect(() => {
+    loadRecommendations();
+  }, []);
+
+  
+
+  
+
+  // Auto-refresh mejorado
+  useEffect(() => {
+    if (!autoRefresh) return;
+
+    const interval = setInterval(() => {
+      if (isParametricMode) {
+        loadParametricData();
+      } else if (externalOnRefresh) {
+        externalOnRefresh();
+      }
+    }, refreshInterval);
+
+    return () => clearInterval(interval);
+  }, [autoRefresh, isParametricMode, externalOnRefresh, refreshInterval, dataSource, config]);
+
+  // Cargar datos paramétricos cuando hay configuración
+  useEffect(() => {
+    if (isParametricMode && config) {
+      loadParametricData();
+    }
+  }, [isParametricMode, config, dataSource]);
+
+  
+
+  async function loadParametricData() {
     setParametricLoading(true);
     setError(null);
     try {
       const response = await fetch(dataSource);
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      
+
       const rawData = await response.json();
-      
+
       if (rawData && config) {
         // Usar el nuevo procesador con configuración
         const processedData = QADataProcessor.processQAData(rawData, config);
@@ -241,9 +267,9 @@ export default function ExecutiveDashboard({
     } finally {
       setParametricLoading(false);
     }
-  };
+  }
 
-  const loadRecommendations = async () => {
+  async function loadRecommendations() {
     try {
       const response = await fetch('/api/recommendations');
       if (response.ok) {
@@ -257,7 +283,7 @@ export default function ExecutiveDashboard({
       console.warn('Error al cargar recomendaciones:', error);
       // No establecer error porque las recomendaciones son opcionales
     }
-  };
+  }
 
   const handleRefresh = () => {
     if (isParametricMode) {
@@ -269,18 +295,22 @@ export default function ExecutiveDashboard({
 
   if (!currentData && !currentLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="text-gray-400 text-xl mb-4">📊</div>
-          <p className="text-gray-600 mb-4">No hay datos disponibles</p>
-          <button 
-            onClick={handleRefresh}
-            className="px-4 py-2 bg-executive-600 text-white rounded-lg hover:bg-executive-700"
-          >
-            Cargar Datos
-          </button>
+      <>
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="text-center">
+            <div className="text-gray-400 text-xl mb-4">📊</div>
+            <p className="text-gray-600 mb-4">No hay datos disponibles</p>
+            <button 
+              onClick={handleRefresh}
+              className="px-4 py-2 bg-executive-600 text-white rounded-lg hover:bg-executive-700"
+            >
+              Cargar Datos
+            </button>
+          </div>
         </div>
-      </div>
+
+        {/* (tooltip portal removed from no-data branch; rendered in main view) */}
+      </>
     );
   }
 
@@ -298,6 +328,33 @@ export default function ExecutiveDashboard({
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#f8f6fd] via-white to-[#f8f6fd]">
+      {/* Sprint tooltip portal (rendered at document.body) */}
+      {typeof document !== 'undefined' && tooltipInfo.visible && tooltipInfo.rect && createPortal(
+        <div
+          style={{
+            position: 'fixed',
+            left: Math.max(8, tooltipInfo.rect.left),
+            top: tooltipInfo.rect.bottom + 8,
+            zIndex: 9999,
+            width: 260,
+          }}
+        >
+          <div className="bg-gray-900 text-white text-xs rounded-md p-2 shadow-lg">
+            <div className="font-semibold mb-1">{tooltipInfo.sprint}</div>
+            {tooltipInfo.sprintData ? (
+              <div className="text-xs space-y-1">
+                <div>📅 {tooltipInfo.sprintData.startDate || 'N/A'}</div>
+                <div>💻 {tooltipInfo.sprintData.version || 'N/A'}</div>
+                <div>🌎 {tooltipInfo.sprintData.environment || 'N/A'}</div>
+                <div>🏷️ {tooltipInfo.sprintData.tags || 'N/A'}</div>
+                <div className="border-t border-gray-700 pt-1 mt-1">🐞 {tooltipInfo.sprintData.bugs || 0} • 🧪 {tooltipInfo.sprintData.testCases || 0}</div>
+              </div>
+            ) : (
+              <div className="text-xs">Sin información adicional</div>
+            )}
+          </div>
+        </div>
+      , document.body)}
       {/* Header mejorado con branding */}
       <div className="bg-white/90 backdrop-blur-md shadow-lg border-b sticky top-0 z-40" style={{ borderColor: '#e0e0e0' }}>
         <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -306,10 +363,12 @@ export default function ExecutiveDashboard({
             <div className="flex items-center space-x-6">
               {/* Logo Tiendas 3B */}
               <div className="flex-shrink-0">
-                <img 
-                  src="/logo-3b.jpg" 
-                  alt="Tiendas 3B" 
-                      className="h-20 w-auto"
+                <Image
+                  src="/logo-3b.jpg"
+                  alt="Tiendas 3B"
+                  width={80}
+                  height={80}
+                  className="h-20 w-auto"
                 />
               </div>
               
@@ -367,29 +426,29 @@ export default function ExecutiveDashboard({
 
       {/* Alertas Críticas mejoradas */}
       {alerts && alerts.length > 0 && (
-        <div className="bg-red-50 border-l-4 border-red-400 p-4 mb-6">
+        <div className="bg-red-50 border-l-4 border-red-400 p-3 mb-3">
           <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex">
               <AlertTriangle className="w-5 h-5 text-red-400 mr-3 mt-0.5" />
               <div className="flex-1">
-                <h3 className="text-sm font-medium text-red-800 mb-2">
+                <h3 className="text-sm font-medium text-red-800 mb-1">
                   Alertas Críticas ({alerts.filter(a => a.type === 'critical').length})
                 </h3>
-                <div className="space-y-1">
+                <div className="space-y-1 text-sm">
                   {alerts.slice(0, 3).map((alert, index) => (
                     <div key={alert.id || index} className="flex items-start justify-between">
                       <p className="text-sm text-red-700 flex-1">
                         • {alert.message || alert.title}
                       </p>
                       {alert.action && (
-                        <button className="text-xs text-red-600 hover:text-red-800 ml-4 underline">
+                        <button className="text-xs text-red-600 hover:text-red-800 ml-3 underline">
                           {alert.action}
                         </button>
                       )}
                     </div>
                   ))}
                   {alerts.length > 3 && (
-                    <p className="text-xs text-red-600 mt-2">
+                    <p className="text-xs text-red-600 mt-1">
                       +{alerts.length - 3} alertas adicionales
                     </p>
                   )}
@@ -400,7 +459,7 @@ export default function ExecutiveDashboard({
         </div>
       )}
 
-      <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
         {/* Navegación por tabs con estilo moderno */}
         <div className="mb-8">
           <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-2 shadow-sm border" style={{ borderColor: '#e0e0e0' }}>
@@ -433,7 +492,19 @@ export default function ExecutiveDashboard({
 
         {/* Contenido por tabs */}
         <div className="animate-fade-in">
-          {activeTab === 'overview' && <OverviewTab data={currentData} recommendations={recommendations} config={config} setDetailModal={setDetailModal} detailModal={detailModal} />}
+          {activeTab === 'overview' && (
+            <OverviewTab
+              data={currentData}
+              recommendations={recommendations}
+              config={config}
+              setDetailModal={setDetailModal}
+              detailModal={detailModal}
+              tooltipInfo={tooltipInfo}
+              showSprintTooltip={showSprintTooltip}
+              hideSprintTooltip={hideSprintTooltip}
+              setTooltipInfo={setTooltipInfo}
+            />
+          )}
           {activeTab === 'quality' && <QualityTab data={currentData} config={config} setDetailModal={setDetailModal} detailModal={detailModal} />}
           {activeTab === 'teams' && <TeamsTab data={currentData} setDetailModal={setDetailModal} detailModal={detailModal} />}
           {activeTab === 'trends' && <TrendsTab data={currentData} setDetailModal={setDetailModal} detailModal={detailModal} />}
@@ -448,11 +519,13 @@ export default function ExecutiveDashboard({
 // COMPONENTES DE TABS (mantén los existentes)
 // ===============================
 
-function OverviewTab({ data, recommendations, config, setDetailModal, detailModal }) {
+function OverviewTab({ data, recommendations, config, setDetailModal, detailModal, tooltipInfo, showSprintTooltip, hideSprintTooltip, setTooltipInfo }) {
   const { kpis, summary } = data;
   const sprintList = data.sprintData?.map(s => s.sprint || s.name || s.id) || [];
   const [selectedSprints, setSelectedSprints] = React.useState(['Todos']);
   const [sprintCollapsed, setSprintCollapsed] = React.useState(false);
+  const [testTypeFilter, setTestTypeFilter] = React.useState('all'); // 'all', 'system', 'uat'
+  const [filterCollapsed, setFilterCollapsed] = React.useState(false);
 
   // Helper to check if a KPI should be visible according to config
   const isKpiVisible = (kpiId) => {
@@ -464,6 +537,28 @@ function OverviewTab({ data, recommendations, config, setDetailModal, detailModa
     } catch (e) {
       return true;
     }
+  };
+
+  // Clasificar sprints por tipo de prueba basado en tags y environment
+  const classifyTestType = (sprint) => {
+    // Preferir el campo testType si existe (viene del procesador Excel enriquecido)
+    if (sprint.testType) {
+      return sprint.testType;
+    }
+    
+    const tags = (sprint.tags || '').toLowerCase();
+    const env = (sprint.environment || '').toUpperCase();
+    
+    // Si contiene tags de UAT o "equipo", es UAT
+    if (tags.includes('uat') || tags.includes('equipo')) {
+      return 'uat';
+    }
+    // Si contiene tags de integración o smoke, es System
+    if (tags.includes('integración') || tags.includes('smoke')) {
+      return 'system';
+    }
+    // Por defecto, asumir system testing
+    return 'system';
   };
 
   // Filtro de sprints con checkboxes
@@ -490,28 +585,71 @@ function OverviewTab({ data, recommendations, config, setDetailModal, detailModa
     }
   };
 
-  // Filtrar datos por sprints seleccionados
-  const filteredSprintData = selectedSprints.includes('Todos')
+  // Manejar cambio de tipo de prueba - resetear sprints seleccionados
+  const handleTestTypeChange = (newType) => {
+    setTestTypeFilter(newType);
+    // Resetear sprints a 'Todos' cuando cambias el tipo de prueba
+    setSelectedSprints(['Todos']);
+  };
+
+  // Obtener sprints disponibles según el tipo de prueba seleccionado
+  const getAvailableSprints = () => {
+    if (testTypeFilter === 'all') {
+      return sprintList;
+    }
+    // Filtrar sprints según el tipo seleccionado
+    return sprintList.filter(sprint => {
+      const sprintData = data.sprintData?.find(s => (s.sprint || s.name || s.id) === sprint);
+      return classifyTestType(sprintData) === testTypeFilter;
+    });
+  };
+
+  const availableSprints = getAvailableSprints();
+
+  // Filtrar datos por sprints seleccionados Y por tipo de prueba
+  let filteredSprintData = selectedSprints.includes('Todos')
     ? data.sprintData
     : data.sprintData?.filter(s => selectedSprints.includes(s.sprint || s.name || s.id));
 
-  // Recalcular KPIs basados en los sprints seleccionados
+  // Aplicar filtro de tipo de prueba
+  if (testTypeFilter !== 'all') {
+    filteredSprintData = filteredSprintData?.filter(s => classifyTestType(s) === testTypeFilter);
+  }
+
+  // Recalcular KPIs basados en los sprints seleccionados y tipo de prueba
   const totalTestCases = filteredSprintData?.reduce((acc, s) => acc + (s.testCases || s.testCasesExecuted || 0), 0) || 0;
-  const totalBugs = filteredSprintData?.reduce((acc, s) => acc + (s.bugs || s.bugsFound || 0), 0) || summary.totalBugs || 0;
+  
+  // Para totalBugs: si hay filtros activos, usar sprints filtrados. Si no, usar el total global (238)
+  const totalBugs = (selectedSprints.includes('Todos') && testTypeFilter === 'all') 
+    ? summary.totalBugs 
+    : filteredSprintData?.reduce((acc, s) => acc + (s.bugs || s.bugsFound || 0), 0) || 0;
   const bugsClosed = filteredSprintData?.reduce((acc, s) => acc + (s.bugsResolved || s.bugsClosed || 0), 0) || summary.bugsClosed || 0;
   
-  // Calcular bugs críticos desde los sprints filtrados
-  // Si no hay filtro, usar bugsByPriority global, si hay filtro calcular proporcionalmente
+  // Calcular bugs críticos desde los sprints filtrados (usar datos reales del JSON)
   let criticalBugsPending, criticalBugsTotal, criticalBugsMasAlta, criticalBugsAlta;
   
-  if (selectedSprints.includes('Todos')) {
-    // Sin filtro: usar datos globales
+  // Si hay filtros activos (NO "Todas las pruebas" O hay filtro de tipo)
+  const hasFiltersActive = !selectedSprints.includes('Todos') || testTypeFilter !== 'all';
+  
+  if (hasFiltersActive) {
+    // Con filtros: calcular desde datos reales de sprints filtrados
+    const sprintsCriticalData = filteredSprintData?.reduce((acc, sprint) => {
+      acc.total += (sprint.criticalBugsTotal || 0);
+      acc.pending += (sprint.criticalBugsPending || 0);
+      return acc;
+    }, { total: 0, pending: 0 });
+    
+    criticalBugsTotal = sprintsCriticalData?.total || 0;
+    criticalBugsPending = sprintsCriticalData?.pending || 0;
+    criticalBugsMasAlta = Math.round(criticalBugsTotal * 0.4);
+    criticalBugsAlta = Math.round(criticalBugsTotal * 0.6);
+  } else {
+    // Sin filtros: usar datos globales de bugsByPriority (238 bugs totales)
     criticalBugsMasAlta = data.bugsByPriority?.['Más alta']?.count || 0;
     criticalBugsAlta = data.bugsByPriority?.['Alta']?.count || 0;
     criticalBugsPending = (data.bugsByPriority?.['Más alta']?.pending || 0) + (data.bugsByPriority?.['Alta']?.pending || 0);
     criticalBugsTotal = criticalBugsMasAlta + criticalBugsAlta;
-  } else {
-    // Con filtro: calcular proporcionalmente basado en los bugs de los sprints seleccionados
+    // Con filtro pero sin datos desglosados: calcular proporcionalmente
     const globalTotalBugs = summary.totalBugs || 1;
     const globalCriticalPending = (data.bugsByPriority?.['Más alta']?.pending || 0) + (data.bugsByPriority?.['Alta']?.pending || 0);
     const globalCriticalTotal = (data.bugsByPriority?.['Más alta']?.count || 0) + (data.bugsByPriority?.['Alta']?.count || 0);
@@ -561,35 +699,46 @@ function OverviewTab({ data, recommendations, config, setDetailModal, detailModa
   });
   const criticalBugsTrend = calculateTrend(s => s.bugs || s.bugsFound || 0) * -1; // Invertido porque menos bugs es mejor
 
-  // NUEVAS MÉTRICAS ESTRATÉGICAS
-  
   // 1. Cycle Time: Tiempo promedio de resolución de bugs
   const calculateCycleTime = () => {
     if (!filteredSprintData || filteredSprintData.length === 0) return { avg: 0, byPriority: {} };
     
-    // Calcular promedio de días que cada bug permanece abierto
-    // Fórmula: (Total bugs abiertos en todos los sprints) / (Total bugs resueltos) × Duración promedio del sprint
-    let totalBugsOpen = 0;
-    let totalBugsResolved = 0;
-    
-    filteredSprintData.forEach(sprint => {
-      const bugsOpen = sprint.bugs || sprint.bugsFound || 0;
-      const bugsResolved = sprint.bugsResolved || sprint.bugsClosed || 0;
-      totalBugsOpen += bugsOpen;
-      totalBugsResolved += bugsResolved;
-    });
-    
-    // Cycle Time = (Bugs pendientes promedio) / (Velocidad de resolución por día)
-    const sprintDuration = 14; // días
-    const numSprints = filteredSprintData.length || 1;
-    const avgBugsPendingPerSprint = totalBugsOpen / numSprints;
-    const resolvedPerDay = totalBugsResolved / (numSprints * sprintDuration);
-    
+    // Usar datos reales del JSON si están disponibles (avgResolutionTime en cada sprint)
     let avgCycleTime;
-    if (resolvedPerDay > 0) {
-      avgCycleTime = Math.round((avgBugsPendingPerSprint / resolvedPerDay) * 10) / 10;
+    const sprintDuration = 14; // días
+    
+    // Intentar usar datos enriquecidos de cada sprint
+    const sprintResolutionTimes = filteredSprintData
+      .filter(s => s.avgResolutionTime !== undefined)
+      .map(s => s.avgResolutionTime);
+    
+    if (sprintResolutionTimes.length > 0) {
+      // Usar el promedio de los tiempos de resolución reales
+      avgCycleTime = Math.round(
+        sprintResolutionTimes.reduce((a, b) => a + b, 0) / sprintResolutionTimes.length
+      );
     } else {
-      avgCycleTime = sprintDuration; // fallback: duración del sprint
+      // Fallback: calcular como antes
+      let totalBugsOpen = 0;
+      let totalBugsResolved = 0;
+      
+      filteredSprintData.forEach(sprint => {
+        const bugsOpen = sprint.bugs || sprint.bugsFound || 0;
+        const bugsResolved = sprint.bugsResolved || sprint.bugsClosed || 0;
+        totalBugsOpen += bugsOpen;
+        totalBugsResolved += bugsResolved;
+      });
+      
+      // Cycle Time = (Bugs pendientes promedio) / (Velocidad de resolución por día)
+      const numSprints = filteredSprintData.length || 1;
+      const avgBugsPendingPerSprint = totalBugsOpen / numSprints;
+      const resolvedPerDay = totalBugsResolved / (numSprints * sprintDuration);
+      
+      if (resolvedPerDay > 0) {
+        avgCycleTime = Math.round((avgBugsPendingPerSprint / resolvedPerDay) * 10) / 10;
+      } else {
+        avgCycleTime = sprintDuration; // fallback: duración del sprint
+      }
     }
     
     // Calcular Cycle Time por prioridad basado en eficiencia de resolución
@@ -605,33 +754,34 @@ function OverviewTab({ data, recommendations, config, setDetailModal, detailModa
       const bajaResolved = data.bugsByPriority['Baja']?.resolved || 0;
       
       // Calcular cycle time por prioridad: (bugs pendientes / bugs resueltos) × promedio de días
+      // Para "Más alta" debería ser más rápido (menos días)
       priorityCycleTime.critical = masAltaResolved > 0 
-        ? Math.round(((masAltaTotal - masAltaResolved) / masAltaResolved * sprintDuration) * 10) / 10 
-        : avgCycleTime * 0.5;
+        ? Math.round(((masAltaTotal - masAltaResolved) / masAltaResolved * 5) * 10) / 10  // 5 días max para críticos
+        : Math.round(avgCycleTime * 0.5);
       
       priorityCycleTime.high = altaResolved > 0 
-        ? Math.round(((altaTotal - altaResolved) / altaResolved * sprintDuration) * 10) / 10 
-        : avgCycleTime * 0.8;
+        ? Math.round(((altaTotal - altaResolved) / altaResolved * 8) * 10) / 10  // 8 días para alta
+        : Math.round(avgCycleTime * 0.8);
       
       priorityCycleTime.medium = mediaResolved > 0 
-        ? Math.round(((mediaTotal - mediaResolved) / mediaResolved * sprintDuration) * 10) / 10 
+        ? Math.round(((mediaTotal - mediaResolved) / mediaResolved * 14) * 10) / 10  // 14 días para media
         : avgCycleTime;
       
       priorityCycleTime.low = bajaResolved > 0 
-        ? Math.round(((bajaTotal - bajaResolved) / bajaResolved * sprintDuration) * 10) / 10 
-        : avgCycleTime * 1.2;
+        ? Math.round(((bajaTotal - bajaResolved) / bajaResolved * 21) * 10) / 10  // 21 días para baja
+        : Math.round(avgCycleTime * 1.5);
     } else {
       // Fallback si no hay datos
       priorityCycleTime = {
         critical: Math.round(avgCycleTime * 0.5),
         high: Math.round(avgCycleTime * 0.8),
         medium: avgCycleTime,
-        low: Math.round(avgCycleTime * 1.2)
+        low: Math.round(avgCycleTime * 1.5)
       };
     }
     
     return {
-      avg: avgCycleTime,
+      avg: Math.max(avgCycleTime, 1), // Asegurar que sea al menos 1 día
       byPriority: priorityCycleTime
     };
   };
@@ -783,105 +933,164 @@ function OverviewTab({ data, recommendations, config, setDetailModal, detailModa
 
   return (
     <div className="space-y-8">
-      {/* Filtro de Sprints con Checkboxes */}
+      {/* Filtros: agrupa Tipo de Prueba + Sprint */}
       <div className="mb-6 bg-white p-4 rounded-lg shadow-sm border border-gray-200">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center">
-            <label className="text-sm font-medium text-gray-700 mr-2">
-              <Settings className="w-4 h-4 inline mr-2" />
-              Filtrar por Sprint:
-            </label>
-            {!selectedSprints.includes('Todos') && selectedSprints.length > 0 && (
-              <span className="text-sm text-executive-600 font-medium">
-                📊 {selectedSprints.length} seleccionado{selectedSprints.length > 1 ? 's' : ''}
-              </span>
-            )}
+            <Settings className="w-4 h-4 inline mr-2" />
+            <h3 className="text-sm font-medium text-gray-700">Filtros</h3>
           </div>
 
-          <button
-            onClick={() => setSprintCollapsed(prev => !prev)}
-            className="inline-flex items-center text-sm text-gray-600 hover:text-gray-800 focus:outline-none"
-            aria-expanded={!sprintCollapsed}
-            aria-controls="sprint-filter-panel"
-          >
-            {sprintCollapsed ? (
-              <>
-                <ChevronDown className="w-4 h-4 mr-2" />
-                Mostrar
-              </>
-            ) : (
-              <>
-                <ChevronUp className="w-4 h-4 mr-2" />
-                Ocultar
-              </>
-            )}
-          </button>
+          <div className="flex items-center space-x-4">
+            <div className="text-xs text-gray-600">Sprints: {availableSprints.length}</div>
+            <div className="text-xs text-gray-600">Seleccionados: {selectedSprints.includes('Todos') ? 'Todos' : selectedSprints.length}</div>
+          </div>
         </div>
 
-        {!sprintCollapsed && (
-          <div id="sprint-filter-panel" className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
-          <label className="flex items-center p-2 rounded-lg border border-gray-200 hover:bg-gray-50 cursor-pointer transition-colors">
-            <input
-              type="checkbox"
-              checked={selectedSprints.includes('Todos')}
-              onChange={() => handleSprintToggle('Todos')}
-              className="w-4 h-4 text-executive-600 rounded focus:ring-2 focus:ring-executive-500"
-            />
-            <span className="ml-2 text-sm font-medium text-gray-900">Todos</span>
-          </label>
-          
-          {sprintList.map((sprint, index) => {
-            // Obtener datos del sprint para el tooltip
-            const sprintData = data.sprintData?.find(s => (s.sprint || s.name || s.id) === sprint);
-            
-            return (
-              <label
-                key={sprint}
-                className={`flex items-center p-2 rounded-lg border transition-colors cursor-pointer relative group ${
-                  selectedSprints.includes(sprint) && !selectedSprints.includes('Todos')
-                    ? 'border-executive-500 bg-executive-50'
-                    : 'border-gray-200 hover:bg-gray-50'
-                }`}
-              >
-                <input
-                  type="checkbox"
-                  checked={selectedSprints.includes(sprint) && !selectedSprints.includes('Todos')}
-                  onChange={() => handleSprintToggle(sprint)}
-                  className="w-4 h-4 text-executive-600 rounded focus:ring-2 focus:ring-executive-500"
-                />
-                <span className="ml-2 text-sm text-gray-700">{sprint}</span>
-                
-                {/* Tooltip personalizado que aparece al hover */}
-                <div className="absolute left-0 top-full mt-2 hidden group-hover:block bg-gray-900 text-white text-xs rounded-lg p-3 shadow-lg z-50 w-64 whitespace-pre-line">
-                  <div className="font-semibold mb-2 border-b border-gray-700 pb-1">{sprint}</div>
-                  {sprintData ? (
-                    <div className="space-y-1">
-                       <div>📅 <strong>Fechas:</strong> {sprintData.startDate || 'N/A'}</div>
-                      <div>💻 <strong>Versión:</strong> {sprintData.version || 'N/A'}</div>
-                      <div>🌎 <strong>Ambiente:</strong> {sprintData.environment || 'N/A'}</div>
-                      <div>📋 <strong>Test Plan:</strong> {sprintData.testPlan || 'N/A'}</div>
-                       <div>🏷️ <strong>Etiquetas:</strong> {sprintData.tags || 'N/A'}</div>
-                      <div className="border-t border-gray-700 pt-1 mt-1">
-                        <div>🐞 Bugs: {sprintData.bugs || 0} | ✅ Resueltos: {sprintData.bugsResolved || 0}</div>
-                        <div>🧪 Casos: {sprintData.testCases || 0}</div>
-                      </div>
-                    </div>
-                  ) : (
-                    <div>Sin información adicional disponible</div>
-                  )}
-                </div>
-              </label>
-            );
-          })}
-          </div>
-        )}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Panel: Tipo de Prueba */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center">
+                <label className="text-sm font-medium text-gray-700 mr-2">
+                  Tipo de Prueba
+                </label>
+                {testTypeFilter !== 'all' && (
+                  <span className="text-sm text-executive-600 font-medium">
+                    📋 {testTypeFilter === 'system' ? 'Pruebas de Sistema' : 'Pruebas UAT'}
+                  </span>
+                )}
+              </div>
 
-        <p className="text-xs text-gray-500 mt-3">
-          💡 Selecciona "Todos" o elige sprints específicos. Los indicadores y gráficos se actualizarán automáticamente.
-        </p>
+              <button
+                onClick={() => setFilterCollapsed(prev => !prev)}
+                className="inline-flex items-center text-sm text-gray-600 hover:text-gray-800 focus:outline-none"
+                aria-expanded={!filterCollapsed}
+                aria-controls="test-type-filter-panel"
+              >
+                {filterCollapsed ? (
+                  <>
+                    <ChevronDown className="w-4 h-4 mr-2" />
+                    Mostrar
+                  </>
+                ) : (
+                  <>
+                    <ChevronUp className="w-4 h-4 mr-2" />
+                    Ocultar
+                  </>
+                )}
+              </button>
+            </div>
+
+            {!filterCollapsed && (
+              <div id="test-type-filter-panel" className="flex gap-2 flex-wrap items-center">
+                <button
+                  type="button"
+                  onClick={() => handleTestTypeChange('all')}
+                  className={`px-2 py-1 rounded-full text-xs font-medium transition-colors focus:outline-none ${
+                    testTypeFilter === 'all' ? 'bg-executive-50 border-executive-500 text-executive-700 border' : 'border border-gray-200 bg-white text-gray-700'
+                  }`}
+                >
+                  Toda la Información
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleTestTypeChange('system')}
+                  className={`px-2 py-1 rounded-full text-xs font-medium transition-colors focus:outline-none ${
+                    testTypeFilter === 'system' ? 'bg-executive-50 border-executive-500 text-executive-700 border' : 'border border-gray-200 bg-white text-gray-700'
+                  }`}
+                >
+                  Pruebas de Sistema
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleTestTypeChange('uat')}
+                  className={`px-2 py-1 rounded-full text-xs font-medium transition-colors focus:outline-none ${
+                    testTypeFilter === 'uat' ? 'bg-executive-50 border-executive-500 text-executive-700 border' : 'border border-gray-200 bg-white text-gray-700'
+                  }`}
+                >
+                  Pruebas UAT
+                </button>
+              </div>
+            )}
+
+            <p className="text-xs text-gray-500 mt-3">💡 Filtra por tipo de prueba para ver métricas específicas de Pruebas de Sistema o Pruebas UAT.</p>
+          </div>
+
+          {/* Panel: Sprints */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-gray-700">Sprints</span>
+                {!selectedSprints.includes('Todos') && selectedSprints.length > 0 && (
+                  <span className="text-xs text-executive-600 font-medium">📊 {selectedSprints.length}</span>
+                )}
+              </div>
+
+              <button
+                onClick={() => setSprintCollapsed(prev => !prev)}
+                className="inline-flex items-center text-xs text-gray-600 hover:text-gray-800 focus:outline-none"
+                aria-expanded={!sprintCollapsed}
+                aria-controls="sprint-filter-panel"
+              >
+                {sprintCollapsed ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
+              </button>
+            </div>
+
+            {!sprintCollapsed && (
+              <div id="sprint-filter-panel" className="flex gap-2 overflow-x-auto overflow-y-visible items-center py-1">
+                {/* 'Todos' chip */}
+                <label
+                  className={`flex items-center px-2 py-1 rounded-full border text-xs cursor-pointer transition-colors ${
+                    selectedSprints.includes('Todos') ? 'bg-executive-50 border-executive-500 text-executive-700' : 'border-gray-200 bg-white text-gray-700'
+                  }`}
+                  title="Seleccionar todos los sprints"
+                >
+                  <input
+                    type="checkbox"
+                    checked={selectedSprints.includes('Todos')}
+                    onChange={() => handleSprintToggle('Todos')}
+                    className="sr-only"
+                  />
+                  <span>Todos</span>
+                </label>
+
+                {availableSprints.map((sprint) => {
+                  const sprintData = data.sprintData?.find(s => (s.sprint || s.name || s.id) === sprint);
+                  const active = selectedSprints.includes(sprint) && !selectedSprints.includes('Todos');
+                  return (
+                    <label
+                      key={sprint}
+                      className={`relative flex items-center px-2 py-1 rounded-full text-xs cursor-pointer transition-colors whitespace-nowrap ${
+                        active ? 'bg-executive-50 border-executive-500 text-executive-700 border' : 'border border-gray-200 bg-white text-gray-700'
+                      }`}
+                      onClick={() => handleSprintToggle(sprint)}
+                      onMouseEnter={(e) => showSprintTooltip(e, sprint, sprintData)}
+                      onMouseLeave={() => hideSprintTooltip()}
+                      onFocus={(e) => showSprintTooltip(e, sprint, sprintData)}
+                      onBlur={() => hideSprintTooltip()}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={active}
+                        onChange={() => handleSprintToggle(sprint)}
+                        className="sr-only"
+                      />
+                      <span className="text-xs">{sprint}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            )}
+
+            <p className="text-xs text-gray-500 mt-3">💡 Selecciona &quot;Todos&quot; o elige sprints específicos. Los indicadores y gráficos se actualizarán automáticamente.</p>
+          </div>
+        </div>
       </div>
 
-      {/* Primera fila - Métricas principales */}
+      {/* Métricas de Cobertura */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {/* 1. COBERTURA: Media de Casos */}
         {isKpiVisible('cobertura') && (
@@ -974,11 +1183,9 @@ function OverviewTab({ data, recommendations, config, setDetailModal, detailModa
             )}
           />
         )}
-        
-        {/* 4. TASA DE REGRESIÓN (moved to third row) */}
       </div>
 
-      {/* Segunda fila - Métricas de seguimiento */}
+      {/* Métricas principales y de seguimiento */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {isKpiVisible('bugsCriticos') && (
           <KPICard
@@ -987,12 +1194,12 @@ function OverviewTab({ data, recommendations, config, setDetailModal, detailModa
           icon={<Bug className="w-6 h-6 text-danger-600" />}
           trend={criticalBugsTrend}
           status={criticalBugsTotal <= 20 ? "success" : "danger"}
-          subtitle={`${Math.round((criticalBugsTotal / totalBugs) * 100)}% del total de hallazgos`}
+          subtitle={`${criticalBugsTotal} críticos de ${totalBugs}`}
           formula={`Críticos = Más alta (${criticalBugsMasAlta}) + Alta (${criticalBugsAlta})`}
           tooltip={
             <div>
               <div className="font-semibold text-sm text-gray-800 mb-1">Qué mide</div>
-              <div className="text-xs text-gray-600 mb-2">Número de hallazgos con prioridad 'Más alta' y 'Alta'.</div>
+              <div className="text-xs text-gray-600 mb-2">Número de hallazgos con prioridad &apos;Más alta&apos; y &apos;Alta&apos;.</div>
               <div className="font-semibold text-sm text-gray-800 mb-1">Por qué es útil</div>
               <div className="text-xs text-gray-600">Mide el volumen de incidencias graves que pueden impactar releases y requieren priorización inmediata.</div>
             </div>

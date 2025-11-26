@@ -1,6 +1,6 @@
 {
   "metadata": {
-    "lastUpdated": "2025-11-20T23:27:43.448Z",
+    "lastUpdated": "2025-11-25T18:06:58.893Z",
     "source": "excel-file",
     "version": "1.0",
     "sprints": [
@@ -13,9 +13,9 @@
     ]
   },
   "summary": {
-    "totalBugs": 138,
-    "bugsClosed": 57,
-    "bugsPending": 65,
+    "totalBugs": 238,
+    "bugsClosed": 77,
+    "bugsPending": 137,
     "testCasesTotal": 692,
     "testCasesExecuted": 692,
     "testCasesPassed": 692,
@@ -23,24 +23,24 @@
   },
   "bugsByPriority": {
     "Más alta": {
-      "count": 7,
-      "pending": 2,
-      "resolved": 4
+      "count": 17,
+      "pending": 10,
+      "resolved": 5
     },
     "Alta": {
-      "count": 41,
-      "pending": 18,
-      "resolved": 19
+      "count": 102,
+      "pending": 58,
+      "resolved": 36
     },
     "Media": {
-      "count": 82,
-      "pending": 36,
-      "resolved": 34
+      "count": 104,
+      "pending": 51,
+      "resolved": 35
     },
     "Baja": {
-      "count": 8,
-      "pending": 7,
-      "resolved": 0
+      "count": 14,
+      "pending": 12,
+      "resolved": 1
     },
     "Más baja": {
       "count": 0,
@@ -202,6 +202,10 @@
       "velocity": 19,
       "plannedVelocity": 149,
       "change": 0,
+      "criticalBugsTotal": 11,
+      "criticalBugsPending": 4,
+      "avgResolutionTime": 8,
+      "testType": "system",
       "version": "V0.4",
       "startDate": "4-12 Agosto",
       "environment": "DEV",
@@ -217,6 +221,10 @@
       "velocity": 20,
       "plannedVelocity": 153,
       "change": -59,
+      "criticalBugsTotal": 5,
+      "criticalBugsPending": 1,
+      "avgResolutionTime": 5,
+      "testType": "system",
       "version": "V0.5",
       "startDate": "18-22 Agosto",
       "environment": "DEV",
@@ -232,6 +240,10 @@
       "velocity": 15,
       "plannedVelocity": 116,
       "change": 47,
+      "criticalBugsTotal": 7,
+      "criticalBugsPending": 4,
+      "avgResolutionTime": 18,
+      "testType": "system",
       "version": "V0.6",
       "startDate": "1-12 Sept",
       "environment": "SIT",
@@ -247,6 +259,10 @@
       "velocity": 20,
       "plannedVelocity": 156,
       "change": -25,
+      "criticalBugsTotal": 5,
+      "criticalBugsPending": 5,
+      "avgResolutionTime": 119,
+      "testType": "system",
       "version": "V0.7",
       "startDate": "15-26 -Sept",
       "environment": "SIT",
@@ -262,6 +278,10 @@
       "velocity": 19,
       "plannedVelocity": 150,
       "change": -10,
+      "criticalBugsTotal": 5,
+      "criticalBugsPending": 4,
+      "avgResolutionTime": 15,
+      "testType": "system",
       "version": "V0.8",
       "startDate": "29 - 13 - Oct",
       "environment": "SIT",
@@ -277,6 +297,10 @@
       "velocity": 5,
       "plannedVelocity": 39,
       "change": -74,
+      "criticalBugsTotal": 2,
+      "criticalBugsPending": 2,
+      "avgResolutionTime": 5,
+      "testType": "system",
       "version": "V0.9",
       "startDate": "14-21-oCT",
       "environment": "SIT",

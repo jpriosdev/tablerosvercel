@@ -15,8 +15,17 @@ const path = require('path');
 // Importar procesador Excel
 const { ExcelQAProcessor } = require('../lib/excelProcessor.cjs');
 
-const EXCEL_PATH = path.join(__dirname, '..', 'data', 'Reporte_QA_V1.xlsx');
-const JSON_OUTPUT_PATH = path.join(__dirname, '..', 'public', 'data', 'qa-data.json');
+// Prefer V2 if present, fallback to V1. Allow forcing via CLI flag --force-v2
+const EXCEL_V2 = path.join(__dirname, '..', 'data', 'Reporte_QA_V2.xlsx');
+const EXCEL_V1 = path.join(__dirname, '..', 'data', 'Reporte_QA_V1.xlsx');
+let EXCEL_PATH = fs.existsSync(EXCEL_V2) ? EXCEL_V2 : EXCEL_V1;
+if (process.argv.includes('--force-v2')) {
+  EXCEL_PATH = EXCEL_V2;
+}
+if (process.argv.includes('--force-v1')) {
+  EXCEL_PATH = EXCEL_V1;
+}
+const JSON_OUTPUT_PATH = path.join(__dirname, '..', 'data', 'qa-data.json');
 const DATA_DIR = path.dirname(JSON_OUTPUT_PATH);
 
 /**

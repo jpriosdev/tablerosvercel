@@ -9,7 +9,7 @@ API Request (pages/api/qa-data.js)
     ↓
 qaDataLoader.getQAData()
     ├─ Check in-memory cache (5 min TTL)
-    ├─ Try JSON (public/data/qa-data.json)
+    ├─ Try JSON (`data/qa-data.json`) (non-public)
     ├─ Fallback to Excel (data/Reporte_QA_V1.xlsx)
     └─ Final fallback: Built-in seed data
     ↓
@@ -71,7 +71,27 @@ const freshData = await getQAData({ forceReload: true });
 ### Data Source Priorities
 
 1. **In-Memory Cache** (0-5 min old)
-2. **JSON File** (`public/data/qa-data.json`)
+2. **JSON File** (`data/qa-data.json`) (non-public; generate explicitly)
+
+CI / Deployment
+----------------
+
+The project expects pre-processing to happen before the app serves traffic. Recommended steps in CI:
+
+- Run DB migrations / setup: `npm run db:migrate` (or `npm run db:setup`)
+- Generate the non-public JSON used by the loader: `npm run generate-json`
+- Then run the build/start steps (`npm run build` / `npm run start`).
+
+Use the provided `ci:prepare` script which runs migrations and generates JSON:
+
+```bash
+npm run ci:prepare
+```
+
+Health check
+------------
+
+The app exposes a simple health endpoint at `/api/health` which validates DB connectivity. Use it as a readiness probe in deployment platforms. It returns HTTP 200 when the DB responds, and 503 when unavailable.
 3. **Excel File** (`data/Reporte_QA_V1.xlsx`)
 4. **Seed Data** (embedded fallback)
 
