@@ -1,4 +1,6 @@
 ﻿import { useState, useEffect } from 'react';
+import Link from 'next/link';
+import UploadData from '../components/UploadData';
 
 export default function ConfigDashboard() {
   const [config, setConfig] = useState(null);
@@ -111,6 +113,17 @@ export default function ConfigDashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Small header with back link so navigation is always available */}
+      <div className="bg-white border-b shadow-sm">
+        <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <Link href="/" className="inline-flex items-center px-3 py-2 border rounded-lg bg-gray-50 hover:bg-gray-100 text-sm">
+              ← Volver al Dashboard
+            </Link>
+            <h2 className="text-sm font-medium text-gray-700">Configuración</h2>
+          </div>
+        </div>
+      </div>
       <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <h1 className="text-2xl font-bold mb-6">Configuración del Dashboard</h1>
 
@@ -215,6 +228,8 @@ export default function ConfigDashboard() {
         </div>
 
         <div className="flex items-center space-x-3">
+          <UploadData />
+          
           <button
             onClick={saveConfig}
             className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
