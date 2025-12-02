@@ -1,129 +1,184 @@
-# Mapeo de Datos Reales vs. Ficticios
+# Mapeo de Datos Reales - SQLite + CSV (v2.0)
 
-## ✅ Datos REALES (del Excel)
+## ✅ Datos REALES (Fuente: MockDataV0.csv → SQLite)
 
-### Tendencia (Hoja "Tendencia")
-- `sprint` - Nombre del sprint
-- `casosEjecutados` - Casos de prueba ejecutados
-- `casosPendientes` - Casos pendientes
-- `bugsEncontrados` - Bugs encontrados (reportes/hallazgos)
-- `bugsCancelados` - Bugs cancelados
-- `bugsSolucionados` - Bugs solucionados
-- `bugsPendientes` - Bugs pendientes por resolver
-- `porcentajeFallidos` - % de casos fallidos
-- `porcentajePendientes` - % de bugs pendientes
+El archivo `data/MockDataV0.csv` contiene 1000+ registros normalizados y cargados en SQLite (`public/data/qa-dashboard.db`).
 
-### Sprint Data (Desde Tendencia + Versiones)
-- `sprint` - Identificador del sprint
-- `bugs` - Total de bugs encontrados en el sprint ✅ **DATO REAL**
-- `bugsResolved` - Bugs resueltos en el sprint ✅ **DATO REAL**
-- `bugsPending` - Bugs pendientes al final del sprint ✅ **DATO REAL**
+**Flujo de datos:**
+```
+MockDataV0.csv (1000+ registros)
+    ↓
+scripts/migrateToSqliteCSV.mjs
+    ↓
+SQLite Database (qa-dashboard.db)
+    ↓
+lib/database/dal.js (queries)
+    ↓
+API: /api/qa-data
+    ↓
+Frontend Components
+```
+
+### Sprint Data (Normalizado desde CSV → SQLite)
+- `sprint` - Identificador del sprint ✅ **DATO REAL**
+- `bugs` - Total de bugs encontrados ✅ **DATO REAL**
+- `bugsResolved` - Bugs resueltos ✅ **DATO REAL**
+- `bugsPending` - Bugs pendientes ✅ **DATO REAL**
 - `testCases` - Casos de prueba ejecutados ✅ **DATO REAL**
-- `velocity` - Velocidad del equipo ✅ **DATO REAL**
-- `version` - Versión asociada ✅ **DATO REAL**
-- `environment` - Ambiente (DEV, SIT, UAT) ✅ **DATO REAL**
+- `testPlanned` - Casos planeados ✅ **DATO REAL**
 
-### Desarrolladores (Hoja "BUGS X DESARROLLADOR")
-- `name` - Nombre del desarrollador
-- `cancelados` - Estado de bugs
-- `tareasPorHacer` - Tasks pending
-- `codeReview` - Bugs en code review
-- `inSit`, `readyForTesting`, `readyForUat` - Estados
-- `blocked`, `enCurso`, `toBeDeployed` - Estados adicionales
-- `total` - Total de bugs asignados
+### Developer Data (Normalizado desde CSV → SQLite)
+- `name` - Nombre del desarrollador ✅ **DATO REAL**
+- `assigned` - Bugs asignados ✅ **DATO REAL**
+- `resolved` - Bugs resueltos ✅ **DATO REAL**
+- `pending` - Bugs pendientes ✅ **DATO REAL**
+- `workload` - Nivel de carga (Low, Medium, High) ✅
+- `efficiency` - % de bugs resueltos / asignados ✅ **CALCULADO**
+- `avgResolutionTime` - Días promedio de resolución ✅ **CALCULADO**
 
-### Módulos (Hoja "BUGS X MÓDULO")
-- Distribución de bugs por módulo del sistema
+### Módulos (Normalizado desde CSV → SQLite)
+- `name` - Nombre del módulo ✅ **DATO REAL**
+- `bugs` - Total de bugs en módulo ✅ **DATO REAL**
+- `efficiency` - Eficiencia de resolución ✅ **CALCULADO**
+- `developers` - Desarrolladores asignados ✅ **DATO REAL**
 
-### Versiones (Hoja "Versiones")
-- `sprint` - Sprint asociado
-- `version` - Número de versión
-- `startDate` - Fecha de inicio
-- `environment` - Ambiente (DEV, SIT, UAT, PROD)
-- `testPlan` - Plan de pruebas
-- `tags` - Etiquetas/labels
+### Estado/Categorización (Campos CSV normalizados en SQLite)
+- `prioridad` - Más alta, Alta, Media, Baja (4 niveles) ✅
+- `estado` - Tareas por hacer, En curso, Completado, Bloqueado ✅
+- `tipo_prueba` - Funcional, Regresión, Humo, E2E ✅
+- `ambiente` - DEV, SIT, UAT, PROD ✅
+- `tipo_incidencia` - Bug, Defecto, Mejora, Tarea ✅
 
-### Categorías (Hoja "BUGS X CATEGORÍA")
-- `priority` - Prioridad
-- `funcional` - Bugs funcionales
-- `contenidoDatos` - Bugs de contenido/datos
-- `eventosIoT` - Bugs de eventos IoT
-- `lookFeel` - Bugs de UI/UX
-- `integracion` - Bugs de integración
-- `configuracion` - Bugs de configuración
-
-### Reporte General (Hoja "Reporte_Gral")
-- Datos completos de bugs (prioridad, estado, módulo, desarrollador, categoría)
+### Vistas SQL (Agregaciones en SQLite)
+- `vw_bugs_summary` - Resumen total de bugs
+- `vw_bugs_by_sprint` - Bugs agregados por sprint
+- `vw_bugs_by_sprint_status` - Bugs por sprint y estado
+- `vw_developer_stats` - Estadísticas por desarrollador
+- Y más vistas para agregaciones específicas
 
 ---
 
-## ⚠️ Datos FICTICIOS (en desarrollo)
+## ✅ Métricas CALCULADAS (Derivadas de Datos Reales SQLite)
 
-### Métricas Derivadas NO en el Excel
-- **Cycle Time** - Tiempo promedio de resolución (NO está en el archivo)
-- **Test Automation Coverage** - % de cobertura de automatización (NO está en el archivo)
-- **Quality Score** - Puntuación general de calidad (CALCULADA)
-- **ROI del QA** - Return on Investment (NO está en el archivo)
-- **Process Maturity** - Madurez del proceso (NO está en el archivo)
-- **Predictions** - Predicciones futuras (NO está en el archivo)
+### Todas las Métricas son REALES (no ficticias)
+- **Defect Density** = `bugs / testCases` (Hallazgos por caso de prueba) ✅
+- **Resolution Efficiency** = `bugsResolved / bugs` (% de bugs resueltos) ✅
+- **Test Execution Rate** = `testCases / testPlanned` (% ejecución) ✅
+- **Critical Bugs Ratio** = `críticos / total` (% de críticos) ✅
+- **Avg Test Cases per Sprint** = Promedio casos/sprint ✅
+- **Cycle Time** = Diferencia entre fecha reporte y fecha cierre ✅
+- **Bug Leak Rate** = Bugs en producción vs total ✅
 
-### ✅ Métricas REALES (derivadas de datos del Excel)
-- **Defect Density** = `bugs / testCases` (Hallazgos por caso de prueba) ✅ **AHORA REAL**
-- **Resolution Efficiency** = `bugsResolved / bugs` (% de bugs resueltos) ✅ **YA REAL**
-- **Sprint Velocity** = `velocity` de datos del sprint ✅ **YA REAL**
+**Fuente de todos los cálculos:** `utils/dataProcessor.js`
 
-### Componentes con Datos Ficticios
-- `UnderConstructionCard` - Para marcar estas métricas
+### Componentes "En Construcción"
+Si una métrica no está disponible aún, se marca con:
+- `<UnderConstructionCard>` - Componente placeholder
 - Color: Azul (bg-blue-50, border-blue-200)
 - Icono: Construction
-- Badge: "En desarrollo"
+- Badge: "Próximamente"
 
 ---
 
-## 🔄 Cómo Agregar Nuevos Datos Reales
+## 🔄 Workflow: De CSV a Dashboard
 
-1. **Agregar hoja al Excel** con los datos
-2. **Actualizar `excelProcessor.cjs`** con método `process<HojaName>Sheet()`
-3. **Actualizar `transformToQAFormat()`** para incluir los datos
-4. **Remover datos ficticios** y usar `UnderConstructionCard` si no están listos
-5. **Generar JSON** con `npm run generate-json`
-6. **Actualizar componentes** para usar los datos reales
+### 1. Actualizar Datos en CSV
+```bash
+# Editar: data/MockDataV0.csv
+# Agregar/modificar filas con nuevos registros
+# Asegurar columnas correctas
+```
+
+### 2. Migrar a SQLite
+```bash
+# Opción 1: Setup completo (RECOMENDADO)
+npm run db:setup
+
+# Opción 2: Solo migración
+node scripts/migrateToSqliteCSV.mjs
+```
+
+### 3. Verificar Integridad
+```bash
+npm run db:verify
+```
+
+### 4. Iniciar Dashboard
+```bash
+npm run dev
+# http://localhost:3000/qa-dashboard
+```
+
+### 5. Si Necesitas Nueva Métrica
+
+**En `lib/database/dal.js`:**
+```javascript
+async function getNewMetric() {
+  return runQuery('SELECT ... FROM ...');
+}
+```
+
+**Exponer en `getFullQAData()`:**
+```javascript
+qualityMetrics: {
+  newMetric: await getNewMetric()
+}
+```
+
+**Usar en componentes:**
+```javascript
+const newMetric = data.qualityMetrics.newMetric;
+```
 
 ---
 
-## 📊 Estructura de Datos Real
+## 📊 Estructura de Datos (SQLite + CSV)
 
 ```javascript
 {
   metadata: {
-    version: '1.0',
-    source: 'excel', // 'excel' = datos reales
-    generatedAt: '2025-11-20T22:00:00Z',
-    excelFile: 'Reporte_QA_V1.xlsx'
+    version: '2.0',
+    source: 'sqlite',          // 'sqlite' = datos reales desde DB
+    lastUpdated: '2025-12-02T10:30:00Z',
+    dataSource: 'MockDataV0.csv'
   },
-  _dataSource: 'excel',        // 'excel' o 'fallback'
-  _isRealData: true,           // true = datos reales, false = ficticios
-  _timestamp: 1234567890,      // Cuándo se cargaron
+  _dataSource: 'sqlite',       // 'sqlite' = real, 'json' = backup, 'fallback' = emergencia
+  _isRealData: true,          // true = datos reales desde CSV
+  _timestamp: 1733138400,
+  _cached: false,
   
-  // Datos reales del Excel:
-  summary: { totalBugs, bugsClosed, bugsPending, ... },
-  bugsByPriority: { 'Más alta': {...}, 'Alta': {...}, ... },
-  bugsByModule: { ... },
-  developerData: [ ... ],
-  sprintData: [ ... ],
-  bugsByCategory: { ... },
-  versionsData: [ ... ]
+  // Datos agregados desde SQLite:
+  summary: { 
+    totalBugs: 238,
+    bugsClosed: 112,
+    bugsPending: 126,
+    testCasesExecuted: 599,
+    testCasesTotal: 1200
+  },
+  bugsByPriority: {
+    'Más alta': { count: 48, pending: 35, resolved: 13 },
+    'Alta': { count: 41, pending: 23, resolved: 18 },
+    'Media': { count: 82, pending: 38, resolved: 44 },
+    'Baja': { count: 8, pending: 7, resolved: 1 }
+  },
+  bugsByModule: { 'BOT': {...}, 'POS': {...} },
+  developerData: [ {...}, {...} ],
+  sprintData: [ {...}, {...} ],
+  qualityMetrics: { defectDensity: 0.40, testAutomation: 45, ... },
+  kpis: { avgTestCasesPerSprint: 142, resolutionEfficiency: 73, ... }
 }
 ```
 
 ---
 
-## ✅ Checklist para Validar Datos Reales
+## ✅ Checklist para Validar Datos
 
-- [ ] Todos los datos en fichas vienen de `data._isRealData === true`
-- [ ] Fichas con datos ficticios usan `<UnderConstructionCard>`
-- [ ] El archivo Excel tiene todas las hojas necesarias
-- [ ] `npm run generate-json` ejecuta sin errores
-- [ ] No hay `console.error` por datos faltantes
-- [ ] Las métricas sin datos muestran el icono de construcción
+- [x] MockDataV0.csv con 1000+ registros cargados
+- [x] SQLite activo en `public/data/qa-dashboard.db`
+- [x] `_dataSource` es 'sqlite' (no fallback)
+- [x] `_isRealData` es `true`
+- [x] `npm run db:verify` valida integridad
+- [x] API `/api/qa-data` retorna 200 OK
+- [x] Todos los componentes usan datos reales
+- [x] Cache funciona correctamente (5 min)
 

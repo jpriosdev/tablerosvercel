@@ -1,124 +1,162 @@
-# Estructura de la hoja "Recomendaciones" en Excel
+# Estructura de Recomendaciones - SQLite + CSV (v2.0)
 
-## Formato de la hoja "Recomendaciones"
+##  CÛmo Funcionan las Recomendaciones
 
-La hoja debe tener las siguientes columnas:
+Las recomendaciones se generan din·micamente basadas en los datos reales de SQLite usando `utils/recommendationEngine.js`.
 
-| Metrica | Condicion | Recomendacion | Prioridad |
-|---------|-----------|---------------|-----------|
+### Flujo de Datos
 
-## Descripci√≥n de columnas:
-
-- **Metrica**: Identificador de la m√©trica (testCases, resolutionEfficiency, criticalBugs, criticalBugsStatus, cycleTime, defectDensity)
-- **Condicion**: Expresi√≥n JavaScript que se eval√∫a (ej: "avg >= 200", "total > 30", "pending === 0", "default")
-- **Recomendacion**: Texto de la recomendaci√≥n que se mostrar√°
-- **Prioridad**: alta, media, o baja
-
-## Ejemplos de filas:
-
-### testCases (Media de Casos Ejecutados)
 ```
-Metrica          | Condicion           | Recomendacion                                                          | Prioridad
-testCases        | avg >= 200          | Excelente cobertura: El equipo mantiene un volumen robusto de testing | baja
-testCases        | avg >= 150 && avg < 200 | Cobertura aceptable: Considerar incrementar casos para m√≥dulos cr√≠ticos | media
-testCases        | avg < 150           | Baja cobertura: Urgente aumentar volumen de casos de prueba          | alta
-testCases        | default             | Implementar m√©tricas de cobertura de c√≥digo para validar completitud  | media
-testCases        | default             | Automatizar casos repetitivos para aumentar eficiencia                | media
+MockDataV0.csv  scripts/migrateToSqliteCSV.mjs  qa-dashboard.db
+                                                        
+                    lib/database/dal.js (getBugsSummary, getBugsBySprint, etc.)
+                                    
+                      /api/qa-data endpoint  Frontend components
+                                    
+                    utils/recommendationEngine.js (eval˙a condiciones)
+                                    
+                      ActionableRecommendations.js (muestra recomendaciones)
 ```
 
-### resolutionEfficiency (Eficiencia de Resoluci√≥n)
-```
-Metrica              | Condicion                    | Recomendacion                                                    | Prioridad
-resolutionEfficiency | efficiency >= 80             | Excelente eficiencia: Equipo altamente productivo en resoluci√≥n  | baja
-resolutionEfficiency | efficiency >= 70 && efficiency < 80 | Buena eficiencia: Mantener el ritmo actual de resoluci√≥n | baja
-resolutionEfficiency | efficiency < 70              | Eficiencia baja: Analizar causas de bugs no resueltos           | alta
-resolutionEfficiency | efficiency < 70              | Revisar backlog: Priorizar cierre de bugs antiguos               | alta
-resolutionEfficiency | default                      | Implementar dailies para desbloquear impedimentos r√°pidamente    | media
-resolutionEfficiency | default                      | Establecer SLAs por prioridad de bug                             | media
-```
+## CÛmo Funcionan las Recomendaciones
 
-### criticalBugs (Bugs Cr√≠ticos Detectados)
-```
-Metrica        | Condicion          | Recomendacion                                                               | Prioridad
-criticalBugs   | total > 30         | Nivel cr√≠tico: Volumen muy alto de bugs graves - requiere atenci√≥n inmediata | alta
-criticalBugs   | total > 20 && total <= 30 | Alta presi√≥n: Considerar asignaci√≥n de recursos adicionales        | alta
-criticalBugs   | total <= 20        | Bajo control: Volumen manejable de bugs cr√≠ticos                            | baja
-criticalBugs   | default            | Establecer war room para bugs de prioridad "M√°s alta"                       | media
-criticalBugs   | default            | Implementar smoke tests autom√°ticos para prevenci√≥n                         | media
-```
+1. **RecopilaciÛn de Datos**: Se consultan datos reales de SQLite usando funciones de `dal.js`
+2. **EvaluaciÛn de Condiciones**: El engine eval˙a expresiones JavaScript contra los datos actuales
+3. **GeneraciÛn de Recomendaciones**: Se seleccionan recomendaciones basadas en las condiciones que se cumplen
+4. **VisualizaciÛn**: Se muestran agrupadas por prioridad en `ActionableRecommendations.js`
 
-### criticalBugsStatus (Estado de Bugs Cr√≠ticos)
-```
-Metrica              | Condicion        | Recomendacion                                                          | Prioridad
-criticalBugsStatus   | pending > 15     | Urgente: Backlog cr√≠tico excesivo - convocar daily enfocado            | alta
-criticalBugsStatus   | pending > 15     | Escalar recursos: Reasignar desarrolladores senior a bugs cr√≠ticos     | alta
-criticalBugsStatus   | pending > 10 && pending <= 15 | Alta prioridad: Acelerar cierre de bugs cr√≠ticos pendientes | alta
-criticalBugsStatus   | pending <= 10 && pending > 0  | Bajo control: Volumen manejable, mantener velocidad de cierre  | baja
-criticalBugsStatus   | pending === 0    | ¬°Excelente: Todos los bugs cr√≠ticos est√°n resueltos!                  | baja
-criticalBugsStatus   | default          | Establecer SLA de 48h m√°ximo para bugs de prioridad "M√°s alta"        | media
-```
+## Variables Disponibles por MÈtrica
 
-### cycleTime (Cycle Time Promedio)
-```
-Metrica    | Condicion                | Recomendacion                                                                      | Prioridad
-cycleTime  | avg > 10                 | Alto Cycle Time: Implementar daily stand-ups para acelerar resoluci√≥n de bloqueadores | alta
-cycleTime  | byPriority.critical > 5  | Cr√≠ticos lentos: Establecer SLA de 48h para bugs cr√≠ticos y asignar recursos dedicados | alta
-cycleTime  | avg <= 7                 | Excelente velocidad: El equipo mantiene un ritmo √≥ptimo de resoluci√≥n              | baja
-cycleTime  | default                  | Considerar automatizaci√≥n de testing para detectar bugs m√°s temprano               | media
-cycleTime  | default                  | Revisar proceso de triage para priorizar efectivamente                             | media
-```
+### testCases (Casos de Prueba Ejecutados)
+- `avg`: Promedio de casos ejecutados por sprint
+- `total`: Total de casos ejecutados en todos los sprints
+- `sprints`: N˙mero de sprints con datos
 
-### defectDensity (Defect Density por HU)
-```
-Metrica        | Condicion        | Recomendacion                                                                          | Prioridad
-defectDensity  | avg > 2.0        | Urgente: Implementar code reviews obligatorios antes de cada commit                    | alta
-defectDensity  | avg > 2.0        | Urgente: Aumentar cobertura de unit tests al 80% m√≠nimo                                | alta
-defectDensity  | avg > 1.0 && avg <= 2.0 | Establecer Definition of Done con criterios de calidad claros                   | media
-defectDensity  | avg > 1.0 && avg <= 2.0 | Implementar pair programming para HUs complejas                                 | media
-defectDensity  | default          | Analizar m√≥dulos con alta concentraci√≥n de bugs para refactorizaci√≥n                  | media
-defectDensity  | default          | Capacitar al equipo en TDD (Test-Driven Development)                                   | media
-defectDensity  | critical > 0.3   | Cr√≠tico: Alta densidad de bugs cr√≠ticos indica problemas en arquitectura o requerimientos | alta
-defectDensity  | avg <= 1.0       | Mantener las pr√°cticas actuales de calidad - est√°n funcionando bien                    | baja
-```
-
-## Variables disponibles por m√©trica:
-
-### testCases:
-- `avg`: Promedio de casos ejecutados
-- `total`: Total de casos ejecutados
-- `sprints`: N√∫mero de sprints
-
-### resolutionEfficiency:
-- `efficiency`: Porcentaje de eficiencia
-- `total`: Total de bugs
+### resolutionEfficiency (Eficiencia de ResoluciÛn)
+- `efficiency`: Porcentaje de bugs resueltos vs total (0-100)
+- `total`: Total de bugs registrados
 - `resolved`: Bugs resueltos
 - `pending`: Bugs pendientes
 
-### criticalBugs:
-- `total`: Total de bugs cr√≠ticos
-- `highest`: Bugs de prioridad "M√°s alta"
+### criticalBugs (Bugs CrÌticos Detectados)
+- `total`: Total de bugs con prioridad crÌtica
+- `highest`: Bugs de prioridad "M·s alta"
 - `high`: Bugs de prioridad "Alta"
 - `totalBugs`: Total de todos los bugs
 
-### criticalBugsStatus:
-- `total`: Total de bugs cr√≠ticos
-- `pending`: Bugs cr√≠ticos pendientes
-- `resolved`: Bugs cr√≠ticos resueltos
+### criticalBugsStatus (Estado de Bugs CrÌticos)
+- `total`: Total de bugs crÌticos
+- `pending`: Bugs crÌticos pendientes de resolver
+- `resolved`: Bugs crÌticos resueltos
 
-### cycleTime:
-- `avg`: Promedio de d√≠as
-- `byPriority.critical`: D√≠as para bugs cr√≠ticos
-- `byPriority.high`: D√≠as para bugs altos
-- `byPriority.medium`: D√≠as para bugs medios
-- `byPriority.low`: D√≠as para bugs bajos
+### cycleTime (Tiempo de Ciclo)
+- `avg`: Promedio de dÌas desde reporte hasta resoluciÛn
+- `byPriority.critical`: Promedio de dÌas para bugs crÌticos
+- `byPriority.high`: Promedio de dÌas para bugs altos
+- `byPriority.medium`: Promedio de dÌas para bugs medios
+- `byPriority.low`: Promedio de dÌas para bugs bajos
 
-### defectDensity:
-- `avg`: Promedio de bugs por HU
-- `total`: Total de HUs
-- `critical`: Bugs cr√≠ticos por HU
+### defectDensity (Densidad de Defectos)
+- `avg`: Promedio de bugs por Historia de Usuario
+- `total`: Total de Historias de Usuario
+- `critical`: Promedio de bugs crÌticos por HU
 
-## Notas:
-- La condici√≥n "default" se aplica siempre (para recomendaciones generales)
-- Las condiciones se eval√∫an como expresiones JavaScript
-- Se pueden usar operadores: >, <, >=, <=, ===, !==, &&, ||
-- El orden importa: las recomendaciones m√°s espec√≠ficas primero, luego las generales
+## Ejemplos de Recomendaciones
+
+### testCases (Media de Casos Ejecutados)
+
+CondiciÛn  RecomendaciÛn
+- `avg >= 200`  Excelente cobertura: El equipo mantiene un volumen robusto de testing
+- `avg >= 150 && avg < 200`  Cobertura aceptable: Considerar incrementar casos para mÛdulos crÌticos
+- `avg < 150`  Baja cobertura: Urgente aumentar volumen de casos de prueba
+- `default`  Implementar mÈtricas de cobertura de cÛdigo para validar completitud
+
+### resolutionEfficiency (Eficiencia de ResoluciÛn)
+
+CondiciÛn  RecomendaciÛn
+- `efficiency >= 80`  Excelente eficiencia: Equipo altamente productivo en resoluciÛn
+- `efficiency >= 70 && efficiency < 80`  Buena eficiencia: Mantener el ritmo actual
+- `efficiency < 70`  Eficiencia baja: Analizar causas de bugs no resueltos
+- `default`  Establecer SLAs por prioridad de bug
+
+### criticalBugs (Bugs CrÌticos Detectados)
+
+CondiciÛn  RecomendaciÛn
+- `total > 30`  Nivel crÌtico: Volumen muy alto - requiere atenciÛn inmediata
+- `total > 20 && total <= 30`  Alta presiÛn: Considerar asignaciÛn de recursos adicionales
+- `total <= 20`  Bajo control: Volumen manejable de bugs crÌticos
+- `default`  Establecer war room para bugs de prioridad "M·s alta"
+
+### criticalBugsStatus (Estado de Bugs CrÌticos)
+
+CondiciÛn  RecomendaciÛn
+- `pending > 15`  Urgente: Backlog crÌtico excesivo - convocar daily enfocado
+- `pending > 10 && pending <= 15`  Alta prioridad: Acelerar cierre de bugs crÌticos
+- `pending === 0`  °Excelente: Todos los bugs crÌticos est·n resueltos!
+- `default`  Establecer SLA de 48h m·ximo para bugs de prioridad "M·s alta"
+
+### cycleTime (Tiempo de Ciclo)
+
+CondiciÛn  RecomendaciÛn
+- `avg > 10`  Alto Cycle Time: Implementar dailies para acelerar resoluciÛn
+- `byPriority.critical > 5`  CrÌticos lentos: Establecer SLA de 48h para bugs crÌticos
+- `avg <= 7`  Excelente velocidad: El equipo mantiene un ritmo Ûptimo
+- `default`  Revisar proceso de triage para priorizar efectivamente
+
+### defectDensity (Densidad de Defectos)
+
+CondiciÛn  RecomendaciÛn
+- `avg > 2.0`  Urgente: Implementar code reviews obligatorios antes de cada commit
+- `avg > 1.0 && avg <= 2.0`  Establecer Definition of Done con criterios de calidad
+- `avg <= 1.0`  Mantener las pr·cticas actuales de calidad - est·n funcionando bien
+- `critical > 0.3`  CrÌtico: Alta densidad de bugs crÌticos indica problemas de arquitectura
+- `default`  Capacitar al equipo en TDD (Test-Driven Development)
+
+## Sintaxis de Condiciones
+
+- **Operadores soportados**: `>`, `<`, `>=`, `<=`, `===`, `!==`, `&&`, `||`
+- **Sintaxis**: Expresiones JavaScript v·lidas (ej: `avg >= 200`, `pending > 15`, `efficiency >= 80 && efficiency < 90`)
+- **Valor especial**: `default` se aplica siempre como fallback general
+- **EvaluaciÛn**: Las condiciones m·s especÌficas se eval˙an primero; si coinciden, se usan esas recomendaciones
+
+## UbicaciÛn del CÛdigo
+
+- **Engine de Recomendaciones**: `utils/recommendationEngine.js`
+  - FunciÛn `generateRecommendations(data)` que eval˙a todas las condiciones
+  - Retorna array de recomendaciones ordenadas por prioridad
+
+- **VisualizaciÛn**: `components/ActionableRecommendations.js`
+  - Consume las recomendaciones del API endpoint `/api/recommendations`
+  - Agrupa por prioridad (Alta, Media, Baja)
+  - Muestra en tarjetas con iconos visuales
+
+- **API Endpoint**: `/api/recommendations` (POST)
+  - Endpoint que recibe datos de SQLite
+  - Llama a `recommendationEngine.generateRecommendations()`
+  - Retorna array de recomendaciones formateado
+
+## Notas Importantes
+
+1. **Datos en Tiempo Real**: Las recomendaciones se basan en datos actuales de SQLite, no en valores est·ticos
+2. **Fallback Seguro**: Si falta alguna mÈtrica, se usan recomendaciones genÈricas (condiciÛn `default`)
+3. **Performance**: La evaluaciÛn de condiciones es r·pida y se cachea por 5 minutos
+4. **Flexibilidad**: Las recomendaciones se pueden actualizar sin cambiar cÛdigo - solo modificando las condiciones en el engine
+
+## CÛmo Agregar Nuevas Recomendaciones
+
+1. Edita `utils/recommendationEngine.js`
+2. Localiza la secciÛn de la mÈtrica correspondiente
+3. Agrega nueva condiciÛn y recomendaciÛn
+4. La plataforma se actualizar· autom·ticamente en el prÛximo ciclo de datos
+
+Ejemplo:
+```javascript
+if (data.testCases?.avg >= 180 && data.testCases.avg < 200) {
+  recommendations.push({
+    metric: 'testCases',
+    condition: 'avg >= 180 && avg < 200',
+    message: 'Cobertura muy buena: Mantener enfoque en mÛdulos crÌticos',
+    priority: 'media'
+  });
+}
+```
