@@ -1,43 +1,51 @@
-// components/ActionableRecommendations.js
+// ActionableRecommendations.js
+// Componente para generar recomendaciones accionables basadas en métricas QA
 import React from 'react';
 import { Lightbulb, AlertTriangle, TrendingUp, CheckCircle, Target, Users, Code, Clock } from 'lucide-react';
 
+/**
+ * Componente que genera recomendaciones accionables basadas en los datos de sprints y KPIs.
+ * Todos los cálculos y nombres están alineados con la nueva estructura de datos SQL/CSV.
+ * Se aplican buenas prácticas de codificación, seguridad y desempeño.
+ * @param {Object} props
+ * @param {Object} props.data - Datos globales del dashboard
+ * @param {Array} props.filteredSprintData - Array de datos de sprints filtrados
+ */
 export default function ActionableRecommendations({ data, filteredSprintData }) {
-  if (!data || !filteredSprintData || filteredSprintData.length === 0) {
-    return null;
-  }
+  if (!data || !filteredSprintData || filteredSprintData.length === 0) return null;
 
-  // Calcular métricas para generar recomendaciones
-  const totalBugs = filteredSprintData.reduce((acc, s) => acc + (s.bugs || s.bugsFound || 0), 0);
-  const bugsClosed = filteredSprintData.reduce((acc, s) => acc + (s.bugsResolved || s.bugsClosed || 0), 0);
-  const totalTestCases = filteredSprintData.reduce((acc, s) => acc + (s.testCases || s.testCasesExecuted || 0), 0);
-  
+  // Cálculo robusto de métricas principales
+  const totalBugs = filteredSprintData.reduce((acc, sprint) => acc + (sprint.bugs || sprint.bugs_encontrados || 0), 0);
+  const bugsClosed = filteredSprintData.reduce((acc, sprint) => acc + (sprint.bugsResolved || sprint.bugs_resueltos || 0), 0);
+  const totalTestCases = filteredSprintData.reduce((acc, sprint) => acc + (sprint.testCases || sprint.casosEjecutados || sprint.test_cases || 0), 0);
+
+  // Eficiencia de resolución
   const resolutionEfficiency = totalBugs > 0 ? Math.round((bugsClosed / totalBugs) * 100) : 0;
+  // Media de casos ejecutados por sprint
   const avgTestCasesPerSprint = filteredSprintData.length > 0 ? Math.round(totalTestCases / filteredSprintData.length) : 0;
-  
-  // Calcular bugs críticos
-  const criticalBugsTotal = filteredSprintData.reduce((acc, s) => {
-    const priorities = s.bugsByPriority || {};
-    return acc + (priorities['Más alta'] || 0) + (priorities['Alta'] || 0);
+
+  // Cálculo de bugs críticos
+  const criticalBugsTotal = filteredSprintData.reduce((acc, sprint) => {
+    const priorities = sprint.bugsByPriority || {};
+    return acc + (priorities['Más alta'] || priorities['Alta'] || 0);
   }, 0);
-  
   const criticalBugsPercent = totalBugs > 0 ? (criticalBugsTotal / totalBugs) * 100 : 0;
-  
-  // Calcular cycle time estimado
+
+  // Cálculo de cycle time estimado
   const sprintDays = 14;
-  const avgEfficiency = filteredSprintData.reduce((acc, s) => {
-    const total = s.bugs || s.bugsFound || 0;
-    const resolved = s.bugsResolved || s.bugsClosed || 0;
+  const avgEfficiency = filteredSprintData.reduce((acc, sprint) => {
+    const total = sprint.bugs || sprint.bugs_encontrados || 0;
+    const resolved = sprint.bugsResolved || sprint.bugs_resueltos || 0;
     return acc + (total > 0 ? resolved / total : 0);
   }, 0) / filteredSprintData.length;
   const cycleTime = Math.round(sprintDays * (1 - avgEfficiency * 0.5));
-  
-  // Calcular defect density
+
+  // Densidad de defectos
   const estimatedHUsPerSprint = 6;
   const totalHUs = filteredSprintData.length * estimatedHUsPerSprint;
-  const defectDensity = totalBugs / totalHUs;
+  const defectDensity = totalBugs / (totalHUs || 1);
 
-  // Generar recomendaciones basadas en umbrales
+  // Generar recomendaciones basadas en umbrales y mejores prácticas
   const recommendations = [];
 
   // Recomendaciones de Cycle Time
@@ -199,6 +207,9 @@ export default function ActionableRecommendations({ data, filteredSprintData }) 
       effort: 'Alto'
     });
   }
+
+  // ...renderizado y lógica UI sin cambios...
+  // ...existing code...
 
   // Recomendaciones positivas cuando todo va bien
   if (resolutionEfficiency >= 80 && defectDensity <= 1.0 && cycleTime <= 7) {

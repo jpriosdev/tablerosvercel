@@ -11,9 +11,10 @@ export default function DeveloperAnalysis({ data }) {
     );
   }
 
-  const sortedDevelopers = [...data].sort((a, b) => b.pending - a.pending);
-  const totalBugs = data.reduce((sum, dev) => sum + dev.totalBugs, 0);
-  const totalPending = data.reduce((sum, dev) => sum + dev.pending, 0);
+  // Refactor: nombres de campos alineados con estructura SQL/CSV
+  const sortedDevelopers = [...data].sort((a, b) => (b.pending || 0) - (a.pending || 0));
+  const totalBugs = data.reduce((sum, dev) => sum + (dev.totalBugs || dev.total_bugs || 0), 0);
+  const totalPending = data.reduce((sum, dev) => sum + (dev.pending || dev.tareas_pendientes || 0), 0);
 
   const getWorkloadColor = (workload) => {
     switch (workload) {

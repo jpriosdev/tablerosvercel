@@ -51,10 +51,37 @@ export class QADataProcessor {
     const bugsClosed = rawData.summary?.bugsClosed || 0;
     const bugsPending = rawData.summary?.bugsPending || 0;
     
-    // Aggregate processed data
+    // Normalizar sprintData: mapear TODOS los posibles nombres de campos SQL/CSV
+    // Estructura: [sprint_name, bugs_found, bugs_resolved, test_cases_executed, ...]
+    const sprintData = (rawData.sprintData || []).map(sprint => ({
+      sprint: sprint.sprint || sprint.sprint_num || sprint.sprint_numero || sprint.nombre_sprint || '',
+      bugs: sprint.total || sprint.bugs || sprint.bugs_encontrados || sprint.defectos_encontrados || 0,
+      bugsResolved: sprint.critical || sprint.bugsResolved || sprint.bugs_resueltos || sprint.defectos_cerrados || 0,
+      bugsPending: sprint.bugsPending || sprint.bugs_pendientes || sprint.defectos_pendientes || 0,
+      testCases: sprint.testCases || sprint.casosEjecutados || sprint.test_cases || sprint.casos_ejecutados || 0,
+      testPlanned: sprint.testPlanned || sprint.casosPlaneados || sprint.test_planned || sprint.casos_planeados || 0,
+      change: sprint.change || sprint.cambio || 0,
+      version: sprint.version || sprint.version_entrega || sprint.version_numero || '',
+      environment: sprint.environment || sprint.ambiente || '',
+      startDate: sprint.startDate || sprint.start_date || sprint.fecha_inicio || ''
+    }));
+
+    // Normalizar developerData: mapear TODOS los posibles nombres de campos SQL/CSV
+    // Estructura: [nombre, bugs_asignados, bugs_resueltos, bugs_pendientes, carga_trabajo, ...]
+    const developerData = (rawData.developerData || []).map(dev => ({
+      name: dev.developer_name || dev.name || dev.asignado_a || dev.nombre_desarrollador || '',
+      assigned: dev.total_bugs || dev.assigned || dev.bugs_asignados || dev.defectos_asignados || 0,
+      resolved: dev.resolved || dev.code_review || dev.bugs_resueltos || dev.defectos_resueltos || 0,
+      pending: dev.pending || dev.tareas_por_hacer || dev.bugs_pendientes || dev.defectos_pendientes || 0,
+      workload: dev.workload_level || dev.workload || dev.carga_trabajo || dev.nivel_carga || '',
+      efficiency: dev.efficiency || dev.eficiencia || 0,
+      avgResolutionTime: dev.avgResolutionTime || dev.avg_resolution_time || dev.tiempo_promedio_resolucion || 0
+    }));
+
     const processedData = {
       ...rawData,
-      
+      sprintData,
+      developerData,
       kpis: this.calculateKPIs(rawData, finalConfig),
       trends: this.calculateTrends(rawData),
       alerts: this.generateAlerts(rawData, finalConfig),
@@ -62,7 +89,6 @@ export class QADataProcessor {
       predictions: this.generatePredictions(rawData),
       processMaturity: this.calculateProcessMaturity(rawData),
       roi: this.calculateROI(rawData),
-      
       metadata: {
         processedAt: new Date().toISOString(),
         version: "2.0",
@@ -70,7 +96,6 @@ export class QADataProcessor {
         processor: "QADataProcessor"
       }
     };
-    
     return processedData;
   }
 
@@ -114,11 +139,33 @@ export class QADataProcessor {
     };
   }
 
+  /**
+   * Calcular media de casos ejecutados por sprint (REFACTORIZADO)
+   * Robustez mejorada: validación de tipos, manejo de valores inválidos
+   * Estructura normalizada SQL/CSV con múltiples nombres de campos
+   * 
+   * @param {Array} sprintData - Array de datos de sprints
+   * @returns {number} Promedio redondeado (0 si no hay datos válidos)
+   */
   static calculateAvgTestCasesPerSprint(sprintData) {
-    if (!sprintData || sprintData.length === 0) return 0;
+    if (!sprintData || !Array.isArray(sprintData) || sprintData.length === 0) return 0;
     
-    const totalCases = sprintData.reduce((sum, sprint) => sum + (sprint.testCases || sprint.casosEjecutados || 0), 0);
-    return Math.round(totalCases / sprintData.length);
+    const totalCases = sprintData.reduce((sum, sprint) => {
+      // Mapear todos los posibles nombres de campo SQL/CSV
+      const cases = sprint.testCases 
+        || sprint.casosEjecutados 
+        || sprint.casos_ejecutados 
+        || sprint.test_cases 
+        || sprint.test_executed
+        || 0;
+      // Validar que sea un número finito válido
+      const validCases = Number.isFinite(cases) ? Math.max(0, cases) : 0;
+      return sum + validCases;
+    }, 0);
+    
+    // Evitar división por cero y redondear
+    const average = sprintData.length > 0 ? totalCases / sprintData.length : 0;
+    return Math.round(average);
   }
 
   static calculateQualityIndex(data, weights) {
@@ -1069,61 +1116,11 @@ export class QADataProcessor {
 }
 
 // ===============================
-// EXPORTACIONES PARA COMPATIBILIDAD
+// EXPORTAR CLASE PRINCIPAL
 // ===============================
+// Solo la clase QADataProcessor se exporta.
+// Las funciones legacy fueron removidas durante auditoría de código muerto
+// (DEAD_CODE_AUDIT.md) ya que nunca se importaban como funciones standalone.
+// Todos los consumidores usan QADataProcessor.método() exclusivamente.
 
-// Función legacy para mantener compatibilidad con código existente
-export function processQAData(rawData) {
-  return QADataProcessor.processQADataLegacy(rawData);
-}
-
-// Función mejorada con validación
-export function processQADataSafe(rawData, config = {}) {
-  return QADataProcessor.processQADataSafe(rawData, config);
-}
-
-// Función con configuración personalizada
-export function processQADataWithConfig(rawData, config) {
-  return QADataProcessor.processQAData(rawData, config);
-}
-
-// Exportar la clase principal
 export default QADataProcessor;
-
-// ===============================
-// FUNCIONES AUXILIARES LEGACY
-// ===============================
-
-function calculateQualityIndex(data) {
-  return QADataProcessor.calculateQualityIndexLegacy(data);
-}
-
-function calculateSprintTrend(sprintData) {
-  return QADataProcessor.calculateSprintTrend(sprintData);
-}
-
-function calculateBugTrend(sprintData) {
-  return QADataProcessor.calculateBugTrend(sprintData);
-}
-
-function calculateResolutionTrend(sprintData) {
-  return QADataProcessor.calculateResolutionTrend(sprintData);
-}
-
-function calculateQualityTrend(sprintData) {
-  return QADataProcessor.calculateQualityTrend(sprintData);
-}
-
-function generateAlerts(rawData) {
-  return QADataProcessor.generateAlertsLegacy(rawData);
-}
-
-// Exportar funciones legacy para compatibilidad
-export {
-  calculateQualityIndex,
-  calculateSprintTrend,
-  calculateBugTrend,
-  calculateResolutionTrend,
-  calculateQualityTrend,
-  generateAlerts
-};

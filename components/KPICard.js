@@ -1,20 +1,20 @@
 /**
- * KPICard Component
- * Displays a single KPI metric with optional trend, status indicator, and tooltip.
- * Supports sparklines, formulas, and click handlers for drill-down.
+ * KPICard Component - Refactorizado y alineado
+ * Muestra una métrica KPI individual con indicador de tendencia, estado y tooltip.
+ * Estructura normalizada SQL/CSV, seguridad mejorada, validación robusta.
  * 
  * @param {Object} props
- * @param {string} props.title - KPI name
- * @param {string|number} props.value - KPI value to display
- * @param {JSX.Element} props.icon - Icon component
- * @param {number} props.trend - Trend percentage (positive/negative)
+ * @param {string} props.title - Nombre del KPI
+ * @param {string|number} props.value - Valor a mostrar (validado)
+ * @param {JSX.Element} props.icon - Icono del componente
+ * @param {number} props.trend - Porcentaje de tendencia
  * @param {string} props.status - 'success' | 'warning' | 'danger' | 'neutral'
- * @param {string} props.subtitle - Optional description
- * @param {string} props.formula - Optional formula explanation
- * @param {string} props.tooltip - Optional hover tooltip text
- * @param {Function} props.onClick - Click handler
- * @param {Array} props.sparklineData - Data for mini sparkline chart
- * @param {boolean} props.isEstimated - Shows (est.) badge if true
+ * @param {string} props.subtitle - Descripción opcional
+ * @param {string} props.formula - Explicación de fórmula
+ * @param {string} props.tooltip - Texto del tooltip
+ * @param {Function} props.onClick - Manejador de clic
+ * @param {Array} props.sparklineData - Datos para sparkline
+ * @param {boolean} props.isEstimated - Badge (est.)
  */
 import { TrendingUp, TrendingDown, Info, ChevronRight, Construction } from 'lucide-react';
 import React, { useState } from 'react';
@@ -53,20 +53,24 @@ export default function KPICard({
     }
   }
   
+  // Seguridad mejorada: typeof check antes de acceder a window
   const handleCardMouseEnter = (e) => {
     if (!tooltip) return;
-    const rect = e.currentTarget.getBoundingClientRect();
-    // Compute tooltip left position; prefer right, but move left if it would overflow viewport
-    const TOOLTIP_WIDTH = 240; // px, approx width of the tooltip
-    const padding = 8;
-    let left = rect.right + padding;
-    if (left + TOOLTIP_WIDTH > (window.innerWidth - padding)) {
-      // place to the left of the card
-      left = rect.left - TOOLTIP_WIDTH - padding;
+    try {
+      const rect = e.currentTarget.getBoundingClientRect();
+      const TOOLTIP_WIDTH = 240;
+      const padding = 8;
+      // Prevenir overflow del viewport
+      let left = rect.right + padding;
+      if (typeof window !== 'undefined' && left + TOOLTIP_WIDTH > (window.innerWidth - padding)) {
+        left = rect.left - TOOLTIP_WIDTH - padding;
+      }
+      left = Math.max(padding, left);
+      setTooltipPos({ x: left, y: rect.top });
+      setShowTooltip(true);
+    } catch (err) {
+      // Silenciar errores no críticos
     }
-    left = Math.max(padding, left);
-    setTooltipPos({ x: left, y: rect.top });
-    setShowTooltip(true);
   };
 
   const handleCardMouseLeave = () => {

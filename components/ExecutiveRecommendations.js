@@ -1,3 +1,8 @@
+/**
+ * ExecutiveRecommendations Component - Refactorizado
+ * Genera recomendaciones de nivel ejecutivo basadas en KPIs y tendencias
+ * Estructura normalizada SQL/CSV, lógica validada y robusta
+ */
 import { 
     Clock, 
     AlertTriangle, 

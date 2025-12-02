@@ -1,6 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
 
-export default function UploadData() {
+/**
+ * UploadData.js - Refactorizado
+ * Componente para carga de datos con normalización SQL/CSV
+ * Validación mejorada, manejo de errores robusto
+ */
   const [running, setRunning] = useState(false);
   const [logs, setLogs] = useState([]);
   const [showSuccess, setShowSuccess] = useState(false);

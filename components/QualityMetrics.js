@@ -36,16 +36,18 @@ import KPICard from './KPICard';
       return sprintData.filter(s => selectedSprints.includes(s.sprint || s.name || s.id));
     }, [sprintData, selectedSprints]);
     // Recompute metrics from provided merged data (kpis + qualityMetrics + summary)
+
+    // Refactor: cálculos alineados con nueva estructura SQL/CSV
     const totalBugs = (filteredSprintData && filteredSprintData.length > 0)
-      ? filteredSprintData.reduce((acc, s) => acc + (s.bugs || s.bugsFound || 0), 0)
+      ? filteredSprintData.reduce((acc, s) => acc + (s.bugs || s.bugs_encontrados || 0), 0)
       : data?.summary?.totalBugs || 0;
 
     const testCasesExecuted = (filteredSprintData && filteredSprintData.length > 0)
-      ? filteredSprintData.reduce((acc, s) => acc + (s.testCasesExecuted || s.testCases || 0), 0)
+      ? filteredSprintData.reduce((acc, s) => acc + (s.testCasesExecuted || s.casosEjecutados || s.testCases || 0), 0)
       : data?.summary?.testCasesExecuted || 0;
 
     const testCasesTotal = (filteredSprintData && filteredSprintData.length > 0)
-      ? filteredSprintData.reduce((acc, s) => acc + (s.testCasesTotal || s.testCases || 0), 0)
+      ? filteredSprintData.reduce((acc, s) => acc + (s.testCasesTotal || s.casosPlaneados || s.testCases || 0), 0)
       : data?.summary?.testCasesTotal || 1;
 
     const defectDensityValue = testCasesExecuted > 0 ? parseFloat((totalBugs / testCasesExecuted).toFixed(2)) : null;

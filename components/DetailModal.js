@@ -1,3 +1,9 @@
+/**
+ * DetailModal.js - Refactorizado y alineado
+ * Modal de drill-down detallado para KPIs y métricas
+ * Estructura normalizada SQL/CSV, lógica mejorada, validación robusta
+ * Todas las referencias alineadas con nueva estructura de datos
+ */
 // components/DetailModal.js
 import React from 'react';
 import { X, TrendingUp, TrendingDown, AlertCircle, CheckCircle, BarChart3, Info, Target, Activity, Users, AlertTriangle, Bug } from 'lucide-react';

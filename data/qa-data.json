@@ -310,7 +310,37 @@
     "testAutomation": 45,
     "cycleTime": 5
   },
-  "recommendations": {},
+  "recommendations": {
+    "testCases": [
+      "Cobertura aceptable: Considerar incrementar casos para módulos críticos",
+      "Automatizar casos repetitivos para aumentar eficiencia",
+      "Priorizar testing de funcionalidades críticas del negocio"
+    ],
+    "resolutionEfficiency": [
+      "Eficiencia baja: Analizar causas de bugs no resueltos",
+      "Revisar backlog: Priorizar cierre de bugs antiguos",
+      "Implementar dailies para desbloquear impedimentos rápidamente"
+    ],
+    "criticalBugs": [
+      "Alta presión: Considerar asignación de recursos adicionales",
+      "Establecer war room para bugs de prioridad 'Más alta'",
+      "Implementar smoke tests automáticos para prevención"
+    ],
+    "criticalBugsStatus": [
+      "Urgente: Backlog crítico excesivo - convocar daily enfocado",
+      "Escalar recursos: Reasignar desarrolladores senior a bugs críticos",
+      "Automatizar notificaciones para bugs críticos sin actualización por 24h"
+    ],
+    "cycleTime": [
+      "Excelente velocidad: El equipo mantiene un ritmo óptimo de resolución",
+      "Considerar automatización de testing para detectar bugs más temprano"
+    ],
+    "defectDensity": [
+      "Establecer Definition of Done con criterios de calidad claros",
+      "Implementar pair programming para HUs complejas",
+      "Analizar módulos con alta concentración de bugs para refactorización"
+    ]
+  },
   "riskAreas": [
     {
       "area": "BOT",

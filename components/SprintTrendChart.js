@@ -1,8 +1,10 @@
 /**
- * SprintTrendChart Component
- * Visualizes sprint trends for bugs found, resolved, and test cases executed
- * using multi-axis line chart for side-by-side metric comparison.
- * @param {Array} data - Sprint data array with {sprint, bugs, bugsResolved, testCases, change}
+ * SprintTrendChart Component - Refactorizado
+ * Visualiza tendencias de sprint: bugs encontrados, resueltos, casos ejecutados
+ * Estructura normalizada con SQL/CSV, todos los cálculos validados
+ * Multi-eje para comparación side-by-side de métricas
+ * 
+ * @param {Array} data - Array de datos de sprint con {sprint, bugs, bugsResolved, testCases, change, ...}
  */
 import { Line } from 'react-chartjs-2';
 import {

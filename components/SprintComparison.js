@@ -1,4 +1,6 @@
-// components/SprintComparison.js
+// SprintComparison.js - Refactorizado
+// Comparación detallada entre sprints: bugs, test cases, velocidad, cambios
+// Estructura normalizada SQL/CSV, cálculos validados, buenas prácticas
 import React from 'react';
 import { TrendingUp, TrendingDown, Minus, ArrowRight } from 'lucide-react';
 
@@ -7,25 +9,26 @@ export default function SprintComparison({ sprintData, selectedSprints }) {
     return null; // No mostrar nada si no hay suficientes datos
   }
 
-  // Usar los últimos 2 sprints si hay más de 2 seleccionados
+  // Refactor: normalizar nombres de campos con estructura SQL/CSV
   const sprints = sprintData.slice(-2);
   const [sprintA, sprintB] = sprints;
 
+  // Función para extraer métricas con nombres SQL/CSV normalizados
   const calculateMetric = (sprint, metric) => {
     switch (metric) {
       case 'bugs':
-        return sprint.bugs || sprint.bugsFound || 0;
+        return sprint.bugs || sprint.bugs_encontrados || sprint.bugsFound || 0;
       case 'bugsResolved':
-        return sprint.bugsResolved || sprint.bugsClosed || 0;
+        return sprint.bugsResolved || sprint.bugs_resueltos || sprint.bugsClosed || 0;
       case 'testCases':
-        return sprint.testCases || sprint.testCasesExecuted || 0;
+        return sprint.testCases || sprint.casosEjecutados || sprint.casos_ejecutados || sprint.testCasesExecuted || 0;
       case 'resolutionRate':
-        const total = sprint.bugs || sprint.bugsFound || 0;
-        const resolved = sprint.bugsResolved || sprint.bugsClosed || 0;
+        const total = sprint.bugs || sprint.bugs_encontrados || 0;
+        const resolved = sprint.bugsResolved || sprint.bugs_resueltos || 0;
         return total > 0 ? Math.round((resolved / total) * 100) : 0;
       case 'criticalBugs':
         const priorities = sprint.bugsByPriority || {};
-        return (priorities['Más alta'] || 0) + (priorities['Alta'] || 0);
+        return (priorities['Más alta'] || priorities['Alta'] || 0);
       default:
         return 0;
     }

@@ -1,17 +1,17 @@
-# Dashboard Ejecutivo QA
+Ôªø# Dashboard Ejecutivo QA
 
-Dashboard de control de calidad y trazabilidad del proceso de pruebas para directores de tecnologÌa.
+Dashboard de control de calidad y trazabilidad del proceso de pruebas para directores de tecnolog√≠a.
 
-**VersiÛn Actual**: 2.1 (ES6 Modules + SQLite + MigraciÛn CSV)
+**Versi√≥n Actual**: 2.1 (ES6 Modules + SQLite + Migraci√≥n CSV)
 
-**Arquitectura Actual**: La base de datos SQLite (`qa-dashboard.db`) se crea y se llena directamente desde `MockDataV0.csv` usando el script de migraciÛn. Todos los datos se normalizan y persisten en SQLite para acceso r·pido.
+**Archivo Base**: `data/MockDataV0.csv` (1,000 registros  SQLite  API  Dashboard)
 
-##  CaracterÌsticas
+##  Caracter√≠sticas
 
-- **Control MetodolÛgico**: MÈtricas de proceso y calidad
-- **Trazabilidad Completa**: Seguimiento desde detecciÛn hasta resoluciÛn
-- **An·lisis por Equipos**: Productividad y distribuciÛn de carga
-- **Recomendaciones Ejecutivas**: Acciones especÌficas para la direcciÛn
+- **Control Metodol√≥gico**: M√©tricas de proceso y calidad
+- **Trazabilidad Completa**: Seguimiento desde detecci√≥n hasta resoluci√≥n
+- **An√°lisis por Equipos**: Productividad y distribuci√≥n de carga
+- **Recomendaciones Ejecutivas**: Acciones espec√≠ficas para la direcci√≥n
 - **ROI Cuantificado**: Impacto financiero del proceso QA
 - **Arquitectura SQLite**: Base de datos persistente y escalable
 - **ES6 Modules**: Compatibilidad total con Next.js 14
@@ -28,54 +28,55 @@ npm run dev                 # Inicia servidor
 
 Luego abre tu navegador en: **http://localhost:3000/qa-dashboard**
 
-##  DocumentaciÛn
+##  Documentaci√≥n
 
 ### Para Empezar
 -  **[QUICK_START.md](./QUICK_START.md)** - 90 segundos a dashboard ejecutando
--  **[ARCHITECTURE.md](./ARCHITECTURE.md)** - Arquitectura SQLite/CSV completa
+-  **[MOCKDATAV0_BASE.md](./MOCKDATAV0_BASE.md)** -  Archivo base: 1,000 registros, flujo completo
 
 ### Referencia de Datos
+-  **[ARCHITECTURE.md](./ARCHITECTURE.md)** - Arquitectura SQLite/CSV completa
 -  **[DATA_MAPPING.md](./DATA_MAPPING.md)** - Flujo de datos y normalizaciones
--  **[RANGOS_VALIDACION.md](./RANGOS_VALIDACION.md)** - Rangos de validaciÛn de mÈtricas
+-  **[RANGOS_VALIDACION.md](./RANGOS_VALIDACION.md)** - Rangos de validaci√≥n de m√©tricas
 -  **[RECOMENDACIONES_ESTRUCTURA.md](./RECOMENDACIONES_ESTRUCTURA.md)** - Motor de recomendaciones
 
 ##  Funcionalidades
 
 ### Resumen Ejecutivo
-- KPIs crÌticos de calidad
+- KPIs cr√≠ticos de calidad
 - Tendencias por sprint
 - Matriz de riesgo por prioridad
-- An·lisis por mÛdulos
+- An√°lisis por m√≥dulos
 
-### MÈtricas de Calidad
+### M√©tricas de Calidad
 - Densidad de defectos
 - Eficiencia de pruebas
-- Cobertura de automatizaciÛn
+- Cobertura de automatizaci√≥n
 - Tiempo de ciclo
 
-### An·lisis de Equipos
-- DistribuciÛn de carga por desarrollador
-- Eficiencia de resoluciÛn
+### An√°lisis de Equipos
+- Distribuci√≥n de carga por desarrollador
+- Eficiencia de resoluci√≥n
 - Recomendaciones de balanceo
 
 ### Tendencias
-- EvoluciÛn de bugs por sprint
-- Tasa de resoluciÛn
-- DistribuciÛn por categorÌas
+- Evoluci√≥n de bugs por sprint
+- Tasa de resoluci√≥n
+- Distribuci√≥n por categor√≠as
 
 ### Recomendaciones
-- Plan de acciÛn ejecutivo
-- MÈtricas de seguimiento
+- Plan de acci√≥n ejecutivo
+- M√©tricas de seguimiento
 - ROI del proceso QA
 
 ##  Arquitectura de Datos (v2.0)
 
 ```
- MockDataV0.csv (1000+ registros)
+ MockDataV0.csv (1,000 registros - ARCHIVO BASE)
     
- scripts/migrateToSqliteCSV.mjs (NormalizaciÛn)
+ scripts/migrateToSqliteCSV.mjs (Normalizaci√≥n)
     
- qa-dashboard.db (SQLite - Fuente ⁄nica)
+ qa-dashboard.db (SQLite - Fuente √önica)
      lib/database/dal.js (25+ queries optimizadas)
     
  /api/qa-data endpoints (Next.js)
@@ -88,17 +89,18 @@ Luego abre tu navegador en: **http://localhost:3000/qa-dashboard**
 ### Flujo de Datos Actual
 
 1. **CSV  SQLite**: `MockDataV0.csv` se normaliza e importa en `qa-dashboard.db`
-2. **Queries Optimizadas**: `lib/database/dal.js` con 25+ mÈtodos est·ticos
-3. **API Endpoints**: Next.js routes que exponen datos vÌa REST
-4. **CachÈ**: 5 minutos en memoria para performance
-5. **Fallback**: SQLite  JSON  datos mÌnimos seguros
+2. **Queries Optimizadas**: `lib/database/dal.js` con 25+ m√©todos est√°ticos
+3. **API Endpoints**: Next.js routes que exponen datos v√≠a REST
+4. **Cach√©**: 5 minutos en memoria para performance
+5. **Fallback**: SQLite  JSON  datos m√≠nimos seguros
 
 ### Componentes Clave
 
-| Componente | Tipo | UbicaciÛn | Estado |
+| Componente | Tipo | Ubicaci√≥n | Estado |
 |-----------|------|-----------|--------|
-| Frontend | React | `pages/`, `components/` |  Funcionando |
-| API | Next.js | `pages/api/` |  Actualizado |
+| Archivo Base | CSV | `data/MockDataV0.csv` |  1,000 registros |
+| Frontend | React | `pages/`, `components/` |  12 componentes |
+| API | Next.js | `pages/api/` |  11 endpoints |
 | DAL | ES6 Module | `lib/database/dal.js` |  25+ queries |
 | DB | SQLite | `qa-dashboard.db` |  238 bugs + 12 sprints |
 
@@ -106,7 +108,7 @@ Luego abre tu navegador en: **http://localhost:3000/qa-dashboard**
 
 - **Tablas**: 3 tablas reales (bugs_detail, sprints_versions, audit_log)
 - **Vistas**: 7 vistas SQL para agregaciones
-- **Õndices**: 6 Ìndices para performance
+- **√çndices**: 6 √≠ndices para performance
 - **Registros**: 238 bugs + 12 sprints + 7 desarrolladores
 
 ##  Comandos Disponibles
@@ -119,8 +121,8 @@ npm run db:verify            # Verificar integridad de datos
 
 # Desarrollo
 npm run dev                  # Inicia servidor en http://localhost:3000
-npm run build                # Compilar para producciÛn
-npm run start                # Iniciar servidor (producciÛn)
+npm run build                # Compilar para producci√≥n
+npm run start                # Iniciar servidor (producci√≥n)
 
 # Testing
 npm run test                 # Ejecutar tests unitarios (si existen)
@@ -132,12 +134,12 @@ npm run test                 # Ejecutar tests unitarios (si existen)
 # Datos principales
 curl http://localhost:3000/api/qa-data              # Datos QA completos
 curl http://localhost:3000/api/qa-data?force=1     # Sin cache
-curl http://localhost:3000/api/qa-data-v2          # VersiÛn alternativa
+curl http://localhost:3000/api/qa-data-v2          # Versi√≥n alternativa
 
-# DiagnÛstico
+# Diagn√≥stico
 curl http://localhost:3000/api/verify-data         # Verificar integridad
 curl http://localhost:3000/api/health              # Estado del servidor
-curl http://localhost:3000/api/config              # ConfiguraciÛn activa
+curl http://localhost:3000/api/config              # Configuraci√≥n activa
 
 # Funcionalidades
 curl http://localhost:3000/api/recommendations     # Recomendaciones
@@ -172,39 +174,39 @@ npm run db:setup
 npm run db:verify
 ```
 
-##  Stack TecnolÛgico
+##  Stack Tecnol√≥gico
 
 - **Framework**: Next.js 14, React 18
 - **Estilos**: Tailwind CSS, Framer Motion
 - **Backend**: Node.js, ES6 Modules
 - **Base de Datos**: SQLite3 (persistente)
-- **Gr·ficos**: Chart.js, React-Chartjs-2
+- **Gr√°ficos**: Chart.js, React-Chartjs-2
 - **Utilidades**: date-fns, Lucide React, Axios
 
 ##  Cambios Recientes (v2.0  v2.1)
 
- MigraciÛn de Excel a MockDataV0.csv  
- RefactorizaciÛn completa a ES6 Modules  
- ConversiÛn a SQLite (fuente ˙nica)  
+ Migraci√≥n de Excel a MockDataV0.csv  
+ Refactorizaci√≥n completa a ES6 Modules  
+ Conversi√≥n a SQLite (fuente √∫nica)  
  25+ queries optimizadas en DAL  
  Cache inteligente (5 minutos)  
- Motor de recomendaciones din·mico  
- Fallback seguro (SQLite  JSON  mÌnimo)  
- 12 componentes React sin cÛdigo muerto  
+ Motor de recomendaciones din√°mico  
+ Fallback seguro (SQLite  JSON  m√≠nimo)  
+ 12 componentes React sin c√≥digo muerto  
 
 ##  Soporte
 
-**øAlgo no funciona?**
+**¬øAlgo no funciona?**
 1. Revisa: [QUICK_START.md](./QUICK_START.md)
 2. Ejecuta: `npm run db:verify`
-3. Verifica: [ARCHITECTURE.md](./ARCHITECTURE.md)  secciÛn de troubleshooting
+3. Verifica: [MOCKDATAV0_BASE.md](./MOCKDATAV0_BASE.md)  secci√≥n de troubleshooting
 
 ##  Licencia
 
-Privado - Uso interno ˙nicamente
+Privado - Uso interno √∫nicamente
 
 ---
 
-**⁄ltima actualizaciÛn**: 2025-11-25  
-**VersiÛn**: 2.1 (ES6 + SQLite + CSV)  
-**Estado**:  ProducciÛn
+**√öltima actualizaci√≥n**: 2025-12-02  
+**Versi√≥n**: 2.1 (ES6 + SQLite + CSV)  
+**Estado**:  Producci√≥n

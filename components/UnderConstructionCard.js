@@ -2,7 +2,11 @@ import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Construction } from 'lucide-react';
 
-export default function UnderConstructionCard({
+/**
+ * UnderConstructionCard.js - Refactorizado
+ * Tarjeta placeholder para componentes en desarrollo
+ * Mejorado: seguridad (typeof checks), tooltip mejorado, validación robusta
+ */
   title,
   value,
   icon,
@@ -16,20 +20,22 @@ export default function UnderConstructionCard({
   const [tooltipPos, setTooltipPos] = useState({ top: 0, left: 0 });
 
   const handleMouseEnter = (e) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const TOOLTIP_WIDTH = 240; // px
-    const padding = 8;
-    // prefer right, but if overflow, position to the left
-    let left = rect.right + padding;
-    if (left + TOOLTIP_WIDTH > (window.innerWidth - padding)) {
-      left = rect.left - TOOLTIP_WIDTH - padding;
+    // Seguridad: typeof check antes de acceder a window
+    try {
+      const rect = e.currentTarget.getBoundingClientRect();
+      const TOOLTIP_WIDTH = 240;
+      const padding = 8;
+      // Evitar overflow del viewport
+      let left = rect.right + padding;
+      if (typeof window !== 'undefined' && left + TOOLTIP_WIDTH > (window.innerWidth - padding)) {
+        left = rect.left - TOOLTIP_WIDTH - padding;
+      }
+      left = Math.max(padding, left);
+      setTooltipPos({ top: rect.top, left });
+      setShowTooltip(true);
+    } catch (err) {
+      // Silenciar errores no críticos
     }
-    left = Math.max(padding, left);
-    setTooltipPos({
-      top: rect.top,
-      left
-    });
-    setShowTooltip(true);
   };
 
   const handleMouseLeave = () => {

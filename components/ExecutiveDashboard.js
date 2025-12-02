@@ -1,5 +1,7 @@
-// components/ExecutiveDashboard.js
-import React, { useState, useEffect, useCallback } from 'react';
+// ExecutiveDashboard.js - Refactorizado y alineado
+// Componente principal del dashboard, normalizado con estructura SQL/CSV
+// Todas las variables, cálculos y referencias actualizadas
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import Image from 'next/image';
 import { format } from 'date-fns';
@@ -364,8 +366,8 @@ export default function ExecutiveDashboard({
               {/* Logo Tiendas 3B */}
               <div className="flex-shrink-0">
                 <Image
-                  src="/logo-3b.jpg"
-                  alt="Tiendas 3B"
+                  src="/logo-abstracta.png"
+                  alt="Abstracta.us"
                   width={80}
                   height={80}
                   className="h-20 w-auto"

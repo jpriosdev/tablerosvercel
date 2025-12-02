@@ -1,12 +1,32 @@
 import { Package, AlertTriangle, CheckCircle, TrendingUp } from 'lucide-react';
 
+/**
+ * ModuleAnalysis Component - Refactorizado
+ * Análisis detallado de bugs, eficiencia y riesgo por módulos del sistema.
+ * Alineado con nueva estructura SQL/CSV, validación segura de datos.
+ */
 export default function ModuleAnalysis({ data }) {
+  // Validación robusta de datos
+  if (!data || typeof data !== 'object' || Object.keys(data).length === 0) {
+    return (
+      <div className="executive-card text-center p-8">
+        <p className="text-gray-600">No hay datos de módulos disponibles</p>
+      </div>
+    );
+  }
+
+  // Normalizar datos del módulo con nombres SQL/CSV
   const modules = Object.entries(data).map(([name, moduleData]) => ({
     name,
-    ...moduleData
+    ...moduleData,
+    total: moduleData.total || moduleData.bugs_total || moduleData.defectos_total || 0,
+    pending: moduleData.pending || moduleData.bugs_pendientes || moduleData.defectos_pendientes || 0,
+    resolved: moduleData.resolved || moduleData.bugs_resueltos || moduleData.defectos_cerrados || 0,
+    percentage: moduleData.percentage || 0
   }));
 
-  const totalBugs = modules.reduce((sum, module) => sum + module.total, 0);
+  // Evitar división por cero
+  const totalBugs = modules.reduce((sum, module) => sum + (module.total || 0), 0) || 1;
 
   const getModuleRiskLevel = (percentage) => {
     if (percentage >= 60) return { level: 'Alto', color: 'red', icon: AlertTriangle };
