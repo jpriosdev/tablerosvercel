@@ -1,0 +1,58 @@
+{
+  "timestamp": "2025-12-31T21:53:17.172Z",
+  "files": {
+    "xlsx": "C:\\Users\\ultra\\PycharmProjects\\PythonProject\\TableroQA\\data\\Reporte_QA_V1.xlsx",
+    "database": "qa-data.json (si existe)"
+  },
+  "summary": {
+    "xlsx": {
+      "sprints": 0,
+      "developers": 0,
+      "modules": 0,
+      "categories": 0,
+      "generalData": false,
+      "recommendations": true
+    },
+    "database": {
+      "sprints": 0,
+      "developers": 0,
+      "modules": 0,
+      "categories": 0,
+      "generalData": false,
+      "recommendations": false
+    }
+  },
+  "validation": {
+    "sprints": {
+      "match": true,
+      "xlsx": 0,
+      "database": 0
+    },
+    "developers": {
+      "match": true,
+      "xlsx": 0,
+      "database": 0
+    },
+    "modules": {
+      "match": true,
+      "xlsx": 0,
+      "database": 0
+    },
+    "categories": {
+      "match": true,
+      "xlsx": 0,
+      "database": 0
+    },
+    "generalData": {
+      "match": true,
+      "xlsx": false,
+      "database": false
+    },
+    "recommendations": {
+      "match": false,
+      "xlsx": true,
+      "database": false
+    }
+  },
+  "detailedDifferences": {}
+}

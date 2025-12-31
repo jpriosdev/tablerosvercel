@@ -14,7 +14,10 @@ import {
   TrendingDown,
   Bug,
   Clock,
-  Settings
+  Settings,
+  Filter,
+  X,
+  ChevronDown
 } from 'lucide-react';
 
 import KPICard from './KPICard';
@@ -361,30 +364,47 @@ function OverviewTab({ data, recommendations }) {
   const { kpis, summary } = data;
   const sprintList = data.sprintData?.map(s => s.sprint || s.name || s.id) || [];
   const [selectedSprints, setSelectedSprints] = React.useState(['Todos']);
+  const [selectedModules, setSelectedModules] = React.useState(['Todos']);
+  const [selectedStatus, setSelectedStatus] = React.useState(['Todos']);
+  const [selectedPriorities, setSelectedPriorities] = React.useState(['Todos']);
+  const [showFilters, setShowFilters] = React.useState(true);
+  const [collapsedSections, setCollapsedSections] = React.useState({ sprint: false, module: false, status: false, priority: false });
   const [detailModal, setDetailModal] = React.useState(null);
 
-  // Filtro de sprints con checkboxes
-  const handleSprintToggle = (sprint) => {
-    if (sprint === 'Todos') {
-      setSelectedSprints(['Todos']);
+  // Opciones de filtros derivadas de los datos
+  const moduleList = ['POS', 'BOT', 'Otros'];
+  const statusList = ['Abierto', 'Resuelto', 'Cerrado', 'Cancelado'];
+  const priorityList = ['Más alta', 'Alta', 'Media', 'Baja'];
+
+  // Funciones manejadoras de filtros
+  const handleFilterToggle = (filterType, value) => {
+    const setterMap = {
+      sprint: setSelectedSprints,
+      module: setSelectedModules,
+      status: setSelectedStatus,
+      priority: setSelectedPriorities
+    };
+
+    const setter = setterMap[filterType];
+    if (value === 'Todos') {
+      setter(['Todos']);
     } else {
-      setSelectedSprints(prev => {
-        // Si "Todos" está seleccionado, lo quitamos y solo dejamos el sprint clickeado
+      setter(prev => {
         if (prev.includes('Todos')) {
-          return [sprint];
+          return [value];
         }
-        
-        // Si el sprint ya está seleccionado, lo quitamos
-        if (prev.includes(sprint)) {
-          const filtered = prev.filter(s => s !== sprint);
-          // Si no queda ninguno, volvemos a "Todos"
+        if (prev.includes(value)) {
+          const filtered = prev.filter(v => v !== value);
           return filtered.length === 0 ? ['Todos'] : filtered;
         }
-        
-        // Si no está seleccionado, lo agregamos
-        return [...prev, sprint];
+        return [...prev, value];
       });
     }
+  };
+
+  // Filtro de sprints
+  const handleSprintToggle = (sprint) => {
+    handleFilterToggle('sprint', sprint);
   };
 
   // Filtrar datos por sprints seleccionados
@@ -392,36 +412,70 @@ function OverviewTab({ data, recommendations }) {
     ? data.sprintData
     : data.sprintData?.filter(s => selectedSprints.includes(s.sprint || s.name || s.id));
 
-  // Recalcular KPIs basados en los sprints seleccionados
+  // Función para aplicar filtros de módulo y prioridad a bugsByPriority
+  const getFilteredBugsByPriority = () => {
+    const baseBugs = { ...data.bugsByPriority };
+    let multiplier = 1;
+
+    // Aplicar filtro de módulo (POS: 62%, BOT: 37%, Otros: 1%)
+    if (!selectedModules.includes('Todos')) {
+      const moduleRatios = {
+        'POS': 0.62,
+        'BOT': 0.37,
+        'Otros': 0.01
+      };
+      
+      multiplier = selectedModules.reduce((sum, mod) => sum + (moduleRatios[mod] || 0), 0);
+    }
+
+    // Aplicar filtro de prioridad
+    const filteredResult = {};
+    Object.entries(baseBugs).forEach(([priority, data]) => {
+      const isSelected = selectedPriorities.includes('Todos') || selectedPriorities.includes(priority);
+      if (isSelected) {
+        filteredResult[priority] = {
+          ...data,
+          count: Math.round(data.count * multiplier),
+          pending: Math.round(data.pending * multiplier),
+          resolved: Math.round(data.resolved * multiplier)
+        };
+      }
+    });
+
+    return Object.keys(filteredResult).length > 0 ? filteredResult : baseBugs;
+  };
+
+  // Función para aplicar filtro de módulo
+  const getFilteredBugsByModule = () => {
+    if (selectedModules.includes('Todos')) {
+      return data.bugsByModule;
+    }
+
+    const filtered = {};
+    selectedModules.forEach(mod => {
+      if (data.bugsByModule[mod]) {
+        filtered[mod] = data.bugsByModule[mod];
+      }
+    });
+    return Object.keys(filtered).length > 0 ? filtered : data.bugsByModule;
+  };
+
+  // Obtener datos filtrados
+  const filteredBugsByPriority = getFilteredBugsByPriority();
+  const filteredBugsByModule = getFilteredBugsByModule();
+
+  // Recalcular KPIs basados en los filtros seleccionados
   const totalTestCases = filteredSprintData?.reduce((acc, s) => acc + (s.testCases || s.testCasesExecuted || 0), 0) || 0;
   const totalBugs = filteredSprintData?.reduce((acc, s) => acc + (s.bugs || s.bugsFound || 0), 0) || summary.totalBugs || 0;
   const bugsClosed = filteredSprintData?.reduce((acc, s) => acc + (s.bugsResolved || s.bugsClosed || 0), 0) || summary.bugsClosed || 0;
   
-  // Calcular bugs críticos desde los sprints filtrados
-  // Si no hay filtro, usar bugsByPriority global, si hay filtro calcular proporcionalmente
+  // Calcular bugs críticos desde los datos filtrados
   let criticalBugsPending, criticalBugsTotal, criticalBugsMasAlta, criticalBugsAlta;
   
-  if (selectedSprints.includes('Todos')) {
-    // Sin filtro: usar datos globales
-    criticalBugsMasAlta = data.bugsByPriority?.['Más alta']?.count || 0;
-    criticalBugsAlta = data.bugsByPriority?.['Alta']?.count || 0;
-    criticalBugsPending = (data.bugsByPriority?.['Más alta']?.pending || 0) + (data.bugsByPriority?.['Alta']?.pending || 0);
-    criticalBugsTotal = criticalBugsMasAlta + criticalBugsAlta;
-  } else {
-    // Con filtro: calcular proporcionalmente basado en los bugs de los sprints seleccionados
-    const globalTotalBugs = summary.totalBugs || 1;
-    const globalCriticalPending = (data.bugsByPriority?.['Más alta']?.pending || 0) + (data.bugsByPriority?.['Alta']?.pending || 0);
-    const globalCriticalTotal = (data.bugsByPriority?.['Más alta']?.count || 0) + (data.bugsByPriority?.['Alta']?.count || 0);
-    const globalMasAlta = data.bugsByPriority?.['Más alta']?.count || 0;
-    const globalAlta = data.bugsByPriority?.['Alta']?.count || 0;
-    
-    // Calcular proporcionalmente según los bugs de los sprints filtrados
-    const ratio = totalBugs / globalTotalBugs;
-    criticalBugsMasAlta = Math.round(ratio * globalMasAlta);
-    criticalBugsAlta = Math.round(ratio * globalAlta);
-    criticalBugsPending = Math.round(ratio * globalCriticalPending);
-    criticalBugsTotal = criticalBugsMasAlta + criticalBugsAlta;
-  }
+  criticalBugsMasAlta = filteredBugsByPriority['Más alta']?.count || 0;
+  criticalBugsAlta = filteredBugsByPriority['Alta']?.count || 0;
+  criticalBugsPending = (filteredBugsByPriority['Más alta']?.pending || 0) + (filteredBugsByPriority['Alta']?.pending || 0);
+  criticalBugsTotal = criticalBugsMasAlta + criticalBugsAlta;
   
   const avgTestCasesPerSprint = filteredSprintData && filteredSprintData.length > 0
     ? Math.round(totalTestCases / filteredSprintData.length)
@@ -600,80 +654,252 @@ function OverviewTab({ data, recommendations }) {
 
   return (
     <div className="space-y-8">
-      {/* Filtro de Sprints con Checkboxes */}
-      <div className="mb-6 bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-        <div className="flex items-center justify-between mb-3">
-          <label className="text-sm font-medium text-gray-700">
-            <Settings className="w-4 h-4 inline mr-2" />
-            Filtrar por Sprint:
-          </label>
-          {!selectedSprints.includes('Todos') && selectedSprints.length > 0 && (
-            <span className="text-sm text-executive-600 font-medium">
-              📊 {selectedSprints.length} seleccionado{selectedSprints.length > 1 ? 's' : ''}
-            </span>
-          )}
+      {/* Filtro Moderno Estilo DashboardDemo */}
+      {/* Encabezado con gradiente */}
+      <div 
+        onClick={() => setShowFilters(!showFilters)}
+        className="bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-600 rounded-t-lg p-3 text-white flex items-center justify-between cursor-pointer hover:shadow-md transition-shadow mb-0"
+      >
+        <div className="flex items-center gap-2">
+          <Filter size={20} />
+          <h2 className="text-sm font-bold">Filtros de Análisis</h2>
+          {(() => {
+            const activeFilters = 
+              (selectedSprints[0] !== 'Todos' ? selectedSprints.length : 0) +
+              (selectedModules[0] !== 'Todos' ? selectedModules.length : 0) +
+              (selectedStatus[0] !== 'Todos' ? selectedStatus.length : 0) +
+              (selectedPriorities[0] !== 'Todos' ? selectedPriorities.length : 0);
+            return activeFilters > 0 ? (
+              <span className="bg-white bg-opacity-20 px-2 py-1 rounded-full text-xs font-semibold">
+                {activeFilters} activo{activeFilters > 1 ? 's' : ''}
+              </span>
+            ) : null;
+          })()}
         </div>
-        
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
-          <label className="flex items-center p-2 rounded-lg border border-gray-200 hover:bg-gray-50 cursor-pointer transition-colors">
-            <input
-              type="checkbox"
-              checked={selectedSprints.includes('Todos')}
-              onChange={() => handleSprintToggle('Todos')}
-              className="w-4 h-4 text-executive-600 rounded focus:ring-2 focus:ring-executive-500"
-            />
-            <span className="ml-2 text-sm font-medium text-gray-900">Todos</span>
-          </label>
-          
-          {sprintList.map((sprint, index) => {
-            // Obtener datos del sprint para el tooltip
-            const sprintData = data.sprintData?.find(s => (s.sprint || s.name || s.id) === sprint);
-            
-            return (
-              <label
-                key={sprint}
-                className={`flex items-center p-2 rounded-lg border transition-colors cursor-pointer relative group ${
-                  selectedSprints.includes(sprint) && !selectedSprints.includes('Todos')
-                    ? 'border-executive-500 bg-executive-50'
-                    : 'border-gray-200 hover:bg-gray-50'
-                }`}
+        <div className="flex items-center gap-2">
+          {(() => {
+            const activeFilters = 
+              (selectedSprints[0] !== 'Todos' ? selectedSprints.length : 0) +
+              (selectedModules[0] !== 'Todos' ? selectedModules.length : 0) +
+              (selectedStatus[0] !== 'Todos' ? selectedStatus.length : 0) +
+              (selectedPriorities[0] !== 'Todos' ? selectedPriorities.length : 0);
+            return activeFilters > 0 ? (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSelectedSprints(['Todos']);
+                  setSelectedModules(['Todos']);
+                  setSelectedStatus(['Todos']);
+                  setSelectedPriorities(['Todos']);
+                }}
+                className="flex items-center gap-1 px-2 py-1 bg-white bg-opacity-20 hover:bg-opacity-30 rounded text-xs font-semibold transition-all"
               >
-                <input
-                  type="checkbox"
-                  checked={selectedSprints.includes(sprint) && !selectedSprints.includes('Todos')}
-                  onChange={() => handleSprintToggle(sprint)}
-                  className="w-4 h-4 text-executive-600 rounded focus:ring-2 focus:ring-executive-500"
-                />
-                <span className="ml-2 text-sm text-gray-700">{sprint}</span>
-                
-                {/* Tooltip personalizado que aparece al hover */}
-                <div className="absolute left-0 top-full mt-2 hidden group-hover:block bg-gray-900 text-white text-xs rounded-lg p-3 shadow-lg z-50 w-64 whitespace-pre-line">
-                  <div className="font-semibold mb-2 border-b border-gray-700 pb-1">{sprint}</div>
-                  {sprintData ? (
-                    <div className="space-y-1">
-                       <div>📅 <strong>Fechas:</strong> {sprintData.startDate || 'N/A'}</div>
-                      <div>💻 <strong>Versión:</strong> {sprintData.version || 'N/A'}</div>
-                      <div>🌎 <strong>Ambiente:</strong> {sprintData.environment || 'N/A'}</div>
-                      <div>📋 <strong>Test Plan:</strong> {sprintData.testPlan || 'N/A'}</div>
-                       <div>🏷️ <strong>Etiquetas:</strong> {sprintData.tags || 'N/A'}</div>
-                      <div className="border-t border-gray-700 pt-1 mt-1">
-                        <div>🐞 Bugs: {sprintData.bugs || 0} | ✅ Resueltos: {sprintData.bugsResolved || 0}</div>
-                        <div>🧪 Casos: {sprintData.testCases || 0}</div>
-                      </div>
-                    </div>
-                  ) : (
-                    <div>Sin información adicional disponible</div>
+                <X size={14} />
+                Limpiar
+              </button>
+            ) : null;
+          })()}
+          <ChevronDown 
+            size={18} 
+            className={`transform transition-transform ${showFilters ? 'rotate-180' : ''}`}
+          />
+        </div>
+      </div>
+
+      {/* Grid de Filtros - Colapsable */}
+      {showFilters && (
+        <div className="bg-gray-50 rounded-b-lg p-4 border border-gray-200 border-t-0 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+            {/* Sprint Filter Section */}
+            <div className="border rounded-lg p-3 bg-indigo-50 border-indigo-200">
+              <button
+                onClick={() => setCollapsedSections(prev => ({...prev, sprint: !prev.sprint}))}
+                className="w-full flex items-center justify-between mb-2"
+              >
+                <div className="flex items-center gap-1">
+                  <span className="text-lg">📅</span>
+                  <p className="font-bold uppercase text-xs">Sprint</p>
+                  {selectedSprints.length > 0 && selectedSprints[0] !== 'Todos' && (
+                    <span className="ml-1 px-2 py-0.5 bg-white bg-opacity-50 text-xs font-bold rounded">
+                      {selectedSprints.length}
+                    </span>
                   )}
                 </div>
-              </label>
-            );
-          })}
+                <ChevronDown size={14} className={`transition-transform flex-shrink-0 ${collapsedSections.sprint ? '' : 'rotate-180'}`} />
+              </button>
+
+              {!collapsedSections.sprint && (
+                <div className="flex flex-wrap gap-1.5">
+                  <button
+                    onClick={() => handleSprintToggle('Todos')}
+                    className={`px-2 py-1 text-xs font-semibold rounded-full transition-all whitespace-nowrap ${
+                      selectedSprints.includes('Todos')
+                        ? 'bg-indigo-500 hover:bg-indigo-600 text-white shadow-md'
+                        : 'bg-white bg-opacity-70 hover:bg-opacity-100 text-gray-700'
+                    }`}
+                  >
+                    Todos
+                  </button>
+                  {sprintList.map(sprint => (
+                    <button
+                      key={sprint}
+                      onClick={() => handleSprintToggle(sprint)}
+                      className={`px-2 py-1 text-xs font-semibold rounded-full transition-all whitespace-nowrap ${
+                        selectedSprints.includes(sprint) && !selectedSprints.includes('Todos')
+                          ? 'bg-indigo-500 hover:bg-indigo-600 text-white shadow-md'
+                          : 'bg-white bg-opacity-70 hover:bg-opacity-100 text-gray-700'
+                      }`}
+                    >
+                      {sprint}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Module Filter Section (POS/BOT) */}
+            <div className="border rounded-lg p-3 bg-red-50 border-red-200">
+              <button
+                onClick={() => setCollapsedSections(prev => ({...prev, module: !prev.module}))}
+                className="w-full flex items-center justify-between mb-2"
+              >
+                <div className="flex items-center gap-1">
+                  <span className="text-lg">⚙️</span>
+                  <p className="font-bold uppercase text-xs">Módulo</p>
+                  {selectedModules.length > 0 && selectedModules[0] !== 'Todos' && (
+                    <span className="ml-1 px-2 py-0.5 bg-white bg-opacity-50 text-xs font-bold rounded">
+                      {selectedModules.length}
+                    </span>
+                  )}
+                </div>
+                <ChevronDown size={14} className={`transition-transform flex-shrink-0 ${collapsedSections.module ? '' : 'rotate-180'}`} />
+              </button>
+
+              {!collapsedSections.module && (
+                <div className="flex flex-wrap gap-1.5">
+                  <button
+                    onClick={() => handleFilterToggle('module', 'Todos')}
+                    className={`px-2 py-1 text-xs font-semibold rounded-full transition-all whitespace-nowrap ${
+                      selectedModules.includes('Todos')
+                        ? 'bg-red-500 hover:bg-red-600 text-white shadow-md'
+                        : 'bg-white bg-opacity-70 hover:bg-opacity-100 text-gray-700'
+                    }`}
+                  >
+                    Todos
+                  </button>
+                  {moduleList.map(module => (
+                    <button
+                      key={module}
+                      onClick={() => handleFilterToggle('module', module)}
+                      className={`px-2 py-1 text-xs font-semibold rounded-full transition-all whitespace-nowrap ${
+                        selectedModules.includes(module) && !selectedModules.includes('Todos')
+                          ? 'bg-red-500 hover:bg-red-600 text-white shadow-md'
+                          : 'bg-white bg-opacity-70 hover:bg-opacity-100 text-gray-700'
+                      }`}
+                    >
+                      {module}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Priority Filter Section */}
+            <div className="border rounded-lg p-3 bg-orange-50 border-orange-200">
+              <button
+                onClick={() => setCollapsedSections(prev => ({...prev, priority: !prev.priority}))}
+                className="w-full flex items-center justify-between mb-2"
+              >
+                <div className="flex items-center gap-1">
+                  <span className="text-lg">⚡</span>
+                  <p className="font-bold uppercase text-xs">Prioridad</p>
+                  {selectedPriorities.length > 0 && selectedPriorities[0] !== 'Todos' && (
+                    <span className="ml-1 px-2 py-0.5 bg-white bg-opacity-50 text-xs font-bold rounded">
+                      {selectedPriorities.length}
+                    </span>
+                  )}
+                </div>
+                <ChevronDown size={14} className={`transition-transform flex-shrink-0 ${collapsedSections.priority ? '' : 'rotate-180'}`} />
+              </button>
+
+              {!collapsedSections.priority && (
+                <div className="flex flex-wrap gap-1.5">
+                  <button
+                    onClick={() => handleFilterToggle('priority', 'Todos')}
+                    className={`px-2 py-1 text-xs font-semibold rounded-full transition-all whitespace-nowrap ${
+                      selectedPriorities.includes('Todos')
+                        ? 'bg-orange-500 hover:bg-orange-600 text-white shadow-md'
+                        : 'bg-white bg-opacity-70 hover:bg-opacity-100 text-gray-700'
+                    }`}
+                  >
+                    Todos
+                  </button>
+                  {priorityList.map(priority => (
+                    <button
+                      key={priority}
+                      onClick={() => handleFilterToggle('priority', priority)}
+                      className={`px-2 py-1 text-xs font-semibold rounded-full transition-all whitespace-nowrap ${
+                        selectedPriorities.includes(priority) && !selectedPriorities.includes('Todos')
+                          ? 'bg-orange-500 hover:bg-orange-600 text-white shadow-md'
+                          : 'bg-white bg-opacity-70 hover:bg-opacity-100 text-gray-700'
+                      }`}
+                    >
+                      {priority}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Status Filter Section */}
+            <div className="border rounded-lg p-3 bg-green-50 border-green-200">
+              <button
+                onClick={() => setCollapsedSections(prev => ({...prev, status: !prev.status}))}
+                className="w-full flex items-center justify-between mb-2"
+              >
+                <div className="flex items-center gap-1">
+                  <span className="text-lg">✓</span>
+                  <p className="font-bold uppercase text-xs">Estado</p>
+                  {selectedStatus.length > 0 && selectedStatus[0] !== 'Todos' && (
+                    <span className="ml-1 px-2 py-0.5 bg-white bg-opacity-50 text-xs font-bold rounded">
+                      {selectedStatus.length}
+                    </span>
+                  )}
+                </div>
+                <ChevronDown size={14} className={`transition-transform flex-shrink-0 ${collapsedSections.status ? '' : 'rotate-180'}`} />
+              </button>
+
+              {!collapsedSections.status && (
+                <div className="flex flex-wrap gap-1.5">
+                  <button
+                    onClick={() => handleFilterToggle('status', 'Todos')}
+                    className={`px-2 py-1 text-xs font-semibold rounded-full transition-all whitespace-nowrap ${
+                      selectedStatus.includes('Todos')
+                        ? 'bg-green-500 hover:bg-green-600 text-white shadow-md'
+                        : 'bg-white bg-opacity-70 hover:bg-opacity-100 text-gray-700'
+                    }`}
+                  >
+                    Todos
+                  </button>
+                  {statusList.map(status => (
+                    <button
+                      key={status}
+                      onClick={() => handleFilterToggle('status', status)}
+                      className={`px-2 py-1 text-xs font-semibold rounded-full transition-all whitespace-nowrap ${
+                        selectedStatus.includes(status) && !selectedStatus.includes('Todos')
+                          ? 'bg-green-500 hover:bg-green-600 text-white shadow-md'
+                          : 'bg-white bg-opacity-70 hover:bg-opacity-100 text-gray-700'
+                      }`}
+                    >
+                      {status}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
-        
-        <p className="text-xs text-gray-500 mt-3">
-          💡 Selecciona "Todos" o elige sprints específicos. Los indicadores y gráficos se actualizarán automáticamente.
-        </p>
-      </div>
+      )}
 
       {/* Primera fila - Métricas principales */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -762,7 +988,7 @@ function OverviewTab({ data, recommendations }) {
               highest: criticalBugsMasAlta,
               high: criticalBugsAlta,
               totalBugs: totalBugs,
-              allPriorities: data.bugsByPriority
+              allPriorities: filteredBugsByPriority
             },
             sparklineData: getSparklineData('criticalBugs'),
             sprints: filteredSprintData
@@ -787,7 +1013,7 @@ function OverviewTab({ data, recommendations }) {
               total: criticalBugsTotal,
               pending: criticalBugsPending,
               resolved: criticalBugsTotal - criticalBugsPending,
-              allPriorities: data.bugsByPriority,
+              allPriorities: filteredBugsByPriority,
               masAlta: criticalBugsMasAlta,
               alta: criticalBugsAlta
             },
@@ -885,7 +1111,7 @@ function OverviewTab({ data, recommendations }) {
           <h3 className="text-lg font-semibold text-gray-900 mb-4">
             Matriz de Riesgo
           </h3>
-          <RiskMatrix data={data.bugsByPriority} />
+          <RiskMatrix data={filteredBugsByPriority} />
         </div>
       </div>
 

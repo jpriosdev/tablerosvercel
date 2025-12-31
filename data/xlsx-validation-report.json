@@ -1,0 +1,127 @@
+{
+  "timestamp": "2025-12-31T22:44:56.272Z",
+  "file": "C:\\Users\\ultra\\PycharmProjects\\PythonProject\\TableroQA\\data\\Reporte_QA_V1.xlsx",
+  "sheets": {
+    "Reporte_Gral": {
+      "found": true,
+      "totalRows": 138,
+      "validRows": 138,
+      "columns": 26,
+      "firstRecord": {
+        "Tipo de Incidencia": "Error",
+        "Clave de incidencia": "T20-958",
+        "ID de la incidencia": 83062,
+        "Resumen": "BOT - Se valida el usuario con Entra ID",
+        "Principal": 87100,
+        "Clave principal": "T20-1091",
+        "Parent summary": "4.- QA ",
+        "Prioridad": "Medio",
+        "Estado": "READY FOR UAT",
+        "Sprint": "Backlog BUGS",
+        "Etiquetas": "doc_ludo",
+        "Etiquetas_5": "Funcional",
+        "Etiquetas_6": "QA-SmokeV0.4",
+        "Etiquetas_7": "T3B20_BOT",
+        "Etiquetas_8": "T3B20_POS",
+        "Etiquetas_9": "Tested_In_DEV",
+        "Etiquetas_10": "Tienda2.0",
+        "Informador": "Ludo",
+        "Creada": 45873.22777777778,
+        "Versiones corregidas": "v0.5",
+        "Módulo": "BOT",
+        "Desarrollador": "Andres Vergara",
+        "¿En que Sprint fue encontrado?": "Sprint 16",
+        "¿En qué versión fue corregido?": "v0.5",
+        "¿En que Sprint fue corregido?": "Sprint 17",
+        "Categoría": "Funcional"
+      }
+    },
+    "Tendencia": {
+      "found": true,
+      "totalRows": 9,
+      "validRows": 9,
+      "columns": 11,
+      "firstRecord": {
+        "__EMPTY_1": "Sprint",
+        "__EMPTY_2": "Casos de Prueba Ejecutados",
+        "__EMPTY_3": "Casos de prueba Pendientes",
+        "__EMPTY_4": "Bugs Encontrados",
+        "__EMPTY_5": "% Casos de Prueba Fallidos",
+        "__EMPTY_6": "BUGS Cancelados",
+        "__EMPTY_7": "Bugs Solucionados",
+        "__EMPTY_8": "BUGS Pendientes por Resolver",
+        "__EMPTY_9": "% Bugs Pendientes por resolver",
+        "Incidentes Totales X Estatus X Sprint": "BUGS     X",
+        "__EMPTY_12": "ESTADO"
+      }
+    },
+    "Versiones": {
+      "found": true,
+      "totalRows": 18,
+      "validRows": 18,
+      "columns": 8,
+      "firstRecord": {
+        "Versión": "V0.4",
+        "Sprint": 16,
+        "Fecha": "4-12 Agosto",
+        "Environment": "DEV",
+        "Test Plan": 1015.742,
+        "__EMPTY": 95,
+        "Etiquetas": "QA-IntegraciónV0.4",
+        "__EMPTY_1": "QA-SmokeV0.4"
+      }
+    },
+    "BUGS X DESARROLLADOR": {
+      "found": true,
+      "totalRows": 21,
+      "validRows": 21,
+      "columns": 2,
+      "firstRecord": {
+        "Reporte por DESARROLLADOR": "Bugs  por",
+        "__EMPTY": "Estado"
+      }
+    },
+    "BUG X MÓDULO": {
+      "found": true,
+      "totalRows": 18,
+      "validRows": 18,
+      "columns": 2,
+      "firstRecord": {
+        "Reporte por Módulo: POS, BOT, CDM": "Módulo",
+        "__EMPTY": "Bugs"
+      }
+    },
+    "BUGS X SPRINT": {
+      "found": true,
+      "totalRows": 12,
+      "validRows": 12,
+      "columns": 3,
+      "firstRecord": {
+        "Reporte por VERSIÓN/SPRINT": "TOTAL DE BUGS ENCONTRADOS POR SPRINT",
+        "__EMPTY_14": "BUGS SOLUCIONADOS POR SPRINT con prioridad - Estos son los bugs que se han ido cerrando en cada sprint, es decir se solucionaron 11 Bugs en el sprint 17, 20 en el sprint 18, etc.",
+        "__EMPTY_29": "BUGS PENDIENTES POR SPRINT con su prioridad"
+      }
+    },
+    "BUGS X CATEGORÍA": {
+      "found": true,
+      "totalRows": 6,
+      "validRows": 6,
+      "columns": 8,
+      "firstRecord": {
+        "Cuenta de Estado": "Etiquetas de fila",
+        "Etiquetas de columna": "Funcional",
+        "__EMPTY": "Contenido/Datos",
+        "__EMPTY_1": "Eventos_iOT",
+        "__EMPTY_2": "Look&Feel",
+        "__EMPTY_3": "Integración",
+        "__EMPTY_4": "Configuración",
+        "__EMPTY_5": "Total"
+      }
+    }
+  },
+  "summary": {
+    "totalSheets": 11,
+    "totalRecords": 222,
+    "dataQuality": {}
+  }
+}
