@@ -1,5 +1,5 @@
-import { findUserByEmail, verifyPassword } from '../../../../lib/users';
-import { signSession } from '../../../../lib/auth';
+const { findUserByEmail, verifyPassword } = require('../../../lib/users');
+import { signSession } from '../../../lib/auth';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ message: 'Method not allowed' });
