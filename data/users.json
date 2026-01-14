@@ -1,0 +1,38 @@
+[
+  {
+    "email": "pilar.albacete@abstracta.us",
+    "name": "Pilar Albacete",
+    "roles": [
+      "user"
+    ],
+    "password": {
+      "salt": "faffa7aaef9db1eeedbc2e469c571c9c",
+      "hash": "d121fc51f5b0163bae4ea8799c6b07de3f2b2388a831a7fd1285802179f6b2f8d68ae79e09e8921b54dd8891a8e29aef83d779d9e4911f559d0150e8c31345b9"
+    },
+    "createdAt": "2026-01-14T01:31:16.352Z"
+  },
+  {
+    "email": "crs@tiendas3b.com",
+    "name": "CRS Tiendas3B",
+    "roles": [
+      "user"
+    ],
+    "password": {
+      "salt": "006fe40a9739d1a90eddde6c2e1b997d",
+      "hash": "238c26c8c14287ead45f2be3835c20fe16e8feaf59b5cd2d0be1618a7db6430184ecbbabdcb1bbe5d1ee6904a6829db7287849ef9f7fce96b35b0a325eb0c14b"
+    },
+    "createdAt": "2026-01-14T01:31:16.411Z"
+  },
+  {
+    "email": "juan.rios@abstracta.us",
+    "name": "Juan Rios",
+    "roles": [
+      "user"
+    ],
+    "password": {
+      "salt": "0140a75c1d2ecba4d81bfb8083b6c687",
+      "hash": "88badebb3a9f60cefff5a0857bcf69d2727645a4c57e576f1d473d0b9557e1f0360f48b6fef30b95c5f933ab4fbd950819bbe242ff89d109164fdddafb95be32"
+    },
+    "createdAt": "2026-01-14T01:31:16.455Z"
+  }
+]

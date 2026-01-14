@@ -14,11 +14,19 @@ git push origin Version-Mejorada
 
 2) Configurar variables de entorno en Vercel
 
-- En el Dashboard de Vercel, en Settings > Environment Variables, añada:
+- En el Dashboard de Vercel, en Settings > Environment Variables, añada al menos las siguientes variables:
   - `DB_READ_ONLY` = `true`
+  - `AUTH_COOKIE_SECRET` = `<random-long-secret>` (obligatorio para producción)
+  - `NEXT_PUBLIC_BASE_URL` = `https://your-vercel-app.vercel.app`
   - (opcional) `VERCEL` = `1`
 
-El servidor detectará `DB_READ_ONLY` o `VERCEL` y abrirá la DB en modo lectura para evitar escrituras en el sistema de archivos.
+El servidor detectará `DB_READ_ONLY` o `VERCEL` y abrirá la DB en modo lectura para evitar escrituras en el sistema de archivos. `AUTH_COOKIE_SECRET` se usa para firmar/validar las sesiones JWT.
+
+Si vas a usar el proveedor OIDC corporativo (Abstracta), añade también:
+  - `ABSTRA_ISSUER` = `https://id.abstracta.us` (o el issuer real de Abstracta)
+  - `ABSTRA_CLIENT_ID` = `...`
+  - `ABSTRA_CLIENT_SECRET` = `...`
+  - `ABSTRA_REDIRECT_URI` = `https://your-vercel-app.vercel.app/api/auth/callback`
 
 3) `.vercelignore`
 

@@ -9,6 +9,8 @@
         "lint": "next lint"
     },
     "dependencies": {
+        "jose": "^5.1.0",
+        "jsonwebtoken": "^9.0.0",
         "critters": "0.0.25",
         "chart.js": "^4.4.0",
         "sqlite3": "^5.1.6",
