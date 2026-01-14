@@ -11,3 +11,19 @@ export default function QADashboardPage() {
   );
 }
 
+export async function getServerSideProps(context) {
+  // protect this page by checking the signed session cookie
+  const { getUserFromRequest } = await import('../lib/auth');
+  const user = await getUserFromRequest(context.req);
+  if (!user) {
+    return {
+      redirect: {
+        destination: '/api/auth/login',
+        permanent: false,
+      },
+    };
+  }
+
+  return { props: {} };
+}
+
