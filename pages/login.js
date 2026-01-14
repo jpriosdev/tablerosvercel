@@ -42,7 +42,7 @@ export default function LoginPage() {
 
         <div className="mt-4 text-sm">
           <p>O usar proveedor corporativo:</p>
-          <Link href="/api/auth/login"><a className="text-blue-600">Iniciar con Abstracta (OIDC)</a></Link>
+          <Link href="/api/auth/login" className="text-blue-600">Iniciar con Abstracta (OIDC)</Link>
         </div>
       </div>
     </div>

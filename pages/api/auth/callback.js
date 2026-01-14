@@ -50,7 +50,9 @@ export default async function handler(req, res) {
   // create session cookie
   const sessionToken = await signSession(profile);
   const maxAge = 8 * 60 * 60; // 8 hours
-  res.setHeader('Set-Cookie', `auth_token=${sessionToken}; HttpOnly; Path=/; Max-Age=${maxAge}; Secure; SameSite=Lax`);
+  const isProd = process.env.NODE_ENV === 'production' || (process.env.NEXT_PUBLIC_BASE_URL || '').startsWith('https');
+  const secureFlag = isProd ? 'Secure; ' : '';
+  res.setHeader('Set-Cookie', `auth_token=${sessionToken}; HttpOnly; Path=/; Max-Age=${maxAge}; ${secureFlag}SameSite=Lax`);
 
   // clear state cookie and redirect
   res.setHeader('Set-Cookie', `auth_state=; HttpOnly; Path=/; Max-Age=0; Secure; SameSite=Lax`);
