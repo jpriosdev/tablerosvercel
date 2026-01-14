@@ -11,15 +11,20 @@ export async function middleware(request) {
     return NextResponse.next();
   }
 
-  // allow the login page
-  if (pathname === '/login' || pathname === '/favicon.ico') return NextResponse.next();
+  // allow the login page (any subpath, e.g. /login/ or /login?next=...)
+  if (pathname.startsWith('/login') || pathname === '/favicon.ico') return NextResponse.next();
 
   const cookie = request.cookies.get('auth_token');
   const token = cookie?.value;
   if (!token) {
+    // avoid infinite redirects if already redirected
     const url = request.nextUrl.clone();
-    url.pathname = '/login';
-    return NextResponse.redirect(url);
+    if (!url.searchParams.has('redirected')) {
+      url.pathname = '/login';
+      url.searchParams.set('redirected', '1');
+      return NextResponse.redirect(url);
+    }
+    return NextResponse.next();
   }
 
   try {

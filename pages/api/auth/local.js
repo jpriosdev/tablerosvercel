@@ -14,6 +14,8 @@ export default async function handler(req, res) {
 
   const token = await signSession({ email: user.email, name: user.name, roles: user.roles });
   const maxAge = 8 * 60 * 60; // 8 hours
-  res.setHeader('Set-Cookie', `auth_token=${token}; HttpOnly; Path=/; Max-Age=${maxAge}; Secure; SameSite=Lax`);
+  const isProd = process.env.NODE_ENV === 'production' || (process.env.NEXT_PUBLIC_BASE_URL || '').startsWith('https');
+  const secureFlag = isProd ? 'Secure; ' : '';
+  res.setHeader('Set-Cookie', `auth_token=${token}; HttpOnly; Path=/; Max-Age=${maxAge}; ${secureFlag}SameSite=Lax`);
   res.status(200).json({ ok: true });
 }
