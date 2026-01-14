@@ -69,7 +69,16 @@ export class QADataProcessor {
     // Calcular media de casos ejecutados por sprint
     const avgTestCasesPerSprint = this.calculateAvgTestCasesPerSprint(rawData.sprintData);
     const resolutionEfficiency = totalBugs > 0 ? Math.round((bugsClosed / totalBugs) * 100) : 0;
-    const defectDensity = testCasesExecuted > 0 ? (totalBugs / testCasesExecuted).toFixed(2) : 0;
+    // Defect density: promedio de bugs por sprint (no por caso)
+    const sprintCount = rawData.sprintData && rawData.sprintData.length > 0 ? rawData.sprintData.length : 0;
+    let defectDensity;
+    if (sprintCount > 0) {
+      const totalBugsInSprints = rawData.sprintData.reduce((sum, s) => sum + (s.bugs || s.bugsFound || 0), 0);
+      defectDensity = (totalBugsInSprints / sprintCount).toFixed(1);
+    } else {
+      // Fallback: usar total de bugs si no hay datos por sprint
+      defectDensity = totalBugs || 0;
+    }
     
     return {
       avgTestCasesPerSprint,  // Reemplaza testCoverage
@@ -275,8 +284,15 @@ export class QADataProcessor {
       });
     }
     
-    // Recomendación basada en densidad de defectos
-    const defectDensity = parseFloat(data.summary?.totalBugs || 0) / (data.summary?.testCasesExecuted || 1);
+    // Recomendación basada en densidad de defectos (promedio bugs por sprint)
+    let defectDensity = 0;
+    const sprintCount = data.sprintData && data.sprintData.length > 0 ? data.sprintData.length : 0;
+    if (sprintCount > 0) {
+      const totalBugsInSprints = data.sprintData.reduce((sum, s) => sum + (s.bugs || s.bugsFound || 0), 0);
+      defectDensity = totalBugsInSprints / sprintCount;
+    } else {
+      defectDensity = parseFloat(data.summary?.totalBugs || 0) / (data.summary?.testCasesExecuted || 1);
+    }
     if (defectDensity > config.thresholds.maxDefectDensity) {
       recommendations.push({
         id: 'reduce-defect-density',

@@ -245,9 +245,14 @@ Las APIs consumirán automáticamente de SQLite.
 2. ✅ Crear script de carga XLSX
 3. ✅ Crear consultas SQL para métricas
 4. ✅ Actualizar APIs
-5. ⏳ **Actualizar componentes React para consumir nuevas APIs**
+5. ✅ Actualizar componentes React para consumir nuevas APIs (ya aplicado en `components/ExecutiveRecommendations.js` para mostrar iconos y notas de recomendaciones)
 6. ⏳ Agregar exportación de reportes en PDF
 7. ⏳ Implementar refresh automático de BD
+
+Notas adicionales:
+- El motor de recomendaciones añade `icon`, `warningIcon` y `note` a las recomendaciones accionables. Ver `utils/recommendationEngine.js`.
+- Se agregó manejo de error en `pages/api/recommendations.js` que devuelve un objeto vacío `{}` si `public/data/recommendations.json` no parsea correctamente; la aplicación usa valores por defecto del motor en ese caso.
+- Copias de seguridad de `public/data/recommendations.json` se almacenan en `public/data/backups/`.
 
 ## Notas
 

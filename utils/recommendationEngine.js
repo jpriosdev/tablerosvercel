@@ -7,57 +7,58 @@
 
 const DEFAULT_RECOMMENDATIONS = {
   testCases: [
-    { condition: 'avg >= 200', text: 'Excelente cobertura: El equipo mantiene un volumen robusto de testing', priority: 'baja' },
-    { condition: 'avg >= 150 && avg < 200', text: 'Cobertura aceptable: Considerar incrementar casos para módulos críticos', priority: 'media' },
-    { condition: 'avg < 150', text: 'Baja cobertura: Urgente aumentar volumen de casos de prueba', priority: 'alta' },
-    { condition: 'default', text: 'Implementar métricas de cobertura de código para validar completitud', priority: 'media' },
-    { condition: 'default', text: 'Automatizar casos repetitivos para aumentar eficiencia', priority: 'media' },
-    { condition: 'default', text: 'Priorizar testing de funcionalidades críticas del negocio', priority: 'media' }
+    { condition: 'avg >= 200', text: 'Cobertura excelente: conservar y documentar los casos; programar revisiones periódicas por módulo', priority: 'baja' },
+    { condition: 'avg >= 150 && avg < 200', text: 'Cobertura aceptable: aumentar casos en módulos críticos y planificar automatización incremental', priority: 'media' },
+    { condition: 'avg < 150', text: 'Cobertura baja: plan de acción inmediato para incrementar casos y priorizar automatización en áreas clave', priority: 'alta' },
+    { condition: 'default', text: 'Configurar métricas de cobertura por módulo y medir semanalmente', priority: 'media' },
+    { condition: 'default', text: 'Automatizar casos repetitivos para reducir esfuerzo manual y mejorar consistencia', priority: 'media' },
+    { condition: 'default', text: 'Priorizar pruebas para funcionalidades críticas del negocio y documentar criterios de aceptación', priority: 'media' }
   ],
   resolutionEfficiency: [
-    { condition: 'efficiency >= 80', text: 'Excelente eficiencia: Equipo altamente productivo en resolución', priority: 'baja' },
-    { condition: 'efficiency >= 70 && efficiency < 80', text: 'Buena eficiencia: Mantener el ritmo actual de resolución', priority: 'baja' },
-    { condition: 'efficiency < 70', text: 'Eficiencia baja: Analizar causas de bugs no resueltos', priority: 'alta' },
-    { condition: 'efficiency < 70', text: 'Revisar backlog: Priorizar cierre de bugs antiguos', priority: 'alta' },
-    { condition: 'default', text: 'Implementar dailies para desbloquear impedimentos rápidamente', priority: 'media' },
-    { condition: 'default', text: 'Establecer SLAs por prioridad de bug', priority: 'media' },
-    { condition: 'default', text: 'Considerar aumentar capacidad del equipo si backlog crece', priority: 'baja' }
+    { condition: 'efficiency >= 80', text: 'Eficiencia alta: mantener prácticas actuales y documentar mejoras replicables', priority: 'baja' },
+    { condition: 'efficiency >= 70 && efficiency < 80', text: 'Eficiencia buena: monitorizar para evitar degradación y optimizar cuellos de botella', priority: 'baja' },
+    { condition: 'efficiency < 70', text: 'Eficiencia baja: identificar bloqueadores, reasignar recursos y reducir backlog prioritario', priority: 'alta' },
+    { condition: 'efficiency < 70', text: 'Priorizar cierre de bugs antiguos y limpiar backlog antes de añadir nuevas features', priority: 'alta' },
+    { condition: 'default', text: 'Establecer sincronizaciones breves QA-Dev (dailies) para acelerar resolución de impedimentos', priority: 'media' },
+    { condition: 'default', text: 'Definir SLAs por prioridad para tiempo de resolución y seguimiento', priority: 'media' },
+    { condition: 'default', text: 'Evaluar capacidad del equipo y contratar/redistribuir si el backlog lo requiere', priority: 'baja' }
   ],
   criticalBugs: [
-    { condition: 'total > 30', text: 'Nivel crítico: Volumen muy alto de bugs graves - requiere atención inmediata', priority: 'alta' },
-    { condition: 'total > 20 && total <= 30', text: 'Alta presión: Considerar asignación de recursos adicionales', priority: 'alta' },
-    { condition: 'total <= 20', text: 'Bajo control: Volumen manejable de bugs críticos', priority: 'baja' },
-    { condition: 'default', text: 'Establecer war room para bugs de prioridad "Más alta"', priority: 'media' },
-    { condition: 'default', text: 'Implementar smoke tests automáticos para prevención', priority: 'media' },
-    { condition: 'default', text: 'Revisar arquitectura de módulos con alta concentración de bugs críticos', priority: 'media' },
-    { condition: 'default', text: 'Incrementar code reviews para funcionalidades core', priority: 'media' }
+    { condition: 'total > 30', text: 'Nivel crítico: convocar acción inmediata y reasignar recursos hasta estabilizar', priority: 'alta' },
+    { condition: 'total > 20 && total <= 30', text: 'Alta presión: asignar recursos adicionales y programar war room hasta bajar la curva', priority: 'alta' },
+    { condition: 'total <= 20', text: 'Volumen manejable: mantener prácticas de control y seguimiento', priority: 'baja' },
+    { condition: 'default', text: 'Establecer war room para bugs de máxima prioridad y seguimiento horario', priority: 'media' },
+    { condition: 'default', text: 'Implementar smoke tests automáticos en pipelines principales', priority: 'media' },
+    { condition: 'default', text: 'Analizar módulos con alta concentración de bugs críticos y planear refactor', priority: 'media' },
+    { condition: 'default', text: 'Aumentar code reviews en funcionalidades core y documentar decisiones', priority: 'media' }
   ],
   criticalBugsStatus: [
-    { condition: 'pending > 15', text: 'Urgente: Backlog crítico excesivo - convocar daily enfocado', priority: 'alta' },
-    { condition: 'pending > 15', text: 'Escalar recursos: Reasignar desarrolladores senior a bugs críticos', priority: 'alta' },
-    { condition: 'pending > 10 && pending <= 15', text: 'Alta prioridad: Acelerar cierre de bugs críticos pendientes', priority: 'alta' },
-    { condition: 'pending <= 10 && pending > 0', text: 'Bajo control: Volumen manejable, mantener velocidad de cierre', priority: 'baja' },
-    { condition: 'pending === 0', text: '¡Excelente: Todos los bugs críticos están resueltos!', priority: 'baja' },
-    { condition: 'default', text: 'Establecer SLA de 48h máximo para bugs de prioridad "Más alta"', priority: 'media' },
-    { condition: 'default', text: 'Implementar triage diario de bugs críticos', priority: 'media' },
-    { condition: 'default', text: 'Automatizar notificaciones para bugs críticos sin actualización por 24h', priority: 'baja' }
+    { condition: 'pending > 15', text: 'Urgente: convocar daily enfocado y redistribuir trabajo para reducir backlog crítico', priority: 'alta' },
+    { condition: 'pending > 15', text: 'Escalar recursos: reasignar desarrolladores senior a bugs críticos hasta estabilizar', priority: 'alta' },
+    { condition: 'pending > 10 && pending <= 15', text: 'Alta prioridad: acelerar cierre de bugs críticos y revisar bloqueo de dependencias', priority: 'alta' },
+    { condition: 'pending <= 10 && pending > 0', text: 'Volumen manejable: mantener velocidad de cierre y monitorización diaria', priority: 'baja' },
+    { condition: 'pending === 0', text: 'Excelente: todos los bugs críticos resueltos; formalizar buenas prácticas mantenidas', priority: 'baja' },
+    { condition: 'default', text: 'Definir SLA (ej. 48h) para bugs de máxima prioridad y medir cumplimiento', priority: 'media' },
+    { condition: 'default', text: 'Implementar triage diario con due owner para cada bug crítico', priority: 'media' },
+    { condition: 'default', text: 'Automatizar alertas para bugs críticos sin actualización en 24h', priority: 'baja' }
   ],
   cycleTime: [
-    { condition: 'avg > 10', text: 'Alto Cycle Time: Implementar daily stand-ups para acelerar resolución de bloqueadores', priority: 'alta' },
-    { condition: 'byPriority.critical > 5', text: 'Críticos lentos: Establecer SLA de 48h para bugs críticos y asignar recursos dedicados', priority: 'alta' },
-    { condition: 'avg <= 7', text: 'Excelente velocidad: El equipo mantiene un ritmo óptimo de resolución', priority: 'baja' },
-    { condition: 'default', text: 'Considerar automatización de testing para detectar bugs más temprano', priority: 'media' },
-    { condition: 'default', text: 'Revisar proceso de triage para priorizar efectivamente', priority: 'media' }
+    { condition: 'avg > 10', text: 'Cycle Time alto: introducir dailies focalizados y eliminar bloqueadores dentro de 48h', priority: 'alta' },
+    { condition: 'byPriority.critical > 5', text: 'Críticos lentos: establecer SLA de 48h y asignar recursos dedicados a críticos', priority: 'alta' },
+    { condition: 'avg <= 7', text: 'Velocidad óptima: mantener prácticas y documentar procesos eficientes', priority: 'baja' },
+    { condition: 'default', text: 'Aumentar automatización de testing para detectar defectos en fases tempranas', priority: 'media' },
+    { condition: 'default', text: 'Revisar y estandarizar triage para priorizar correctamente', priority: 'media' }
   ],
   defectDensity: [
-    { condition: 'avg > 2.0', text: 'Urgente: Implementar code reviews obligatorios antes de cada commit', priority: 'alta' },
-    { condition: 'avg > 2.0', text: 'Urgente: Aumentar cobertura de unit tests al 80% mínimo', priority: 'alta' },
-    { condition: 'avg > 1.0 && avg <= 2.0', text: 'Establecer Definition of Done con criterios de calidad claros', priority: 'media' },
-    { condition: 'avg > 1.0 && avg <= 2.0', text: 'Implementar pair programming para HUs complejas', priority: 'media' },
-    { condition: 'default', text: 'Analizar módulos con alta concentración de bugs para refactorización', priority: 'media' },
-    { condition: 'default', text: 'Capacitar al equipo en TDD (Test-Driven Development)', priority: 'media' },
-    { condition: 'critical > 0.3', text: 'Crítico: Alta densidad de bugs críticos indica problemas en arquitectura o requerimientos', priority: 'alta' },
-    { condition: 'avg <= 1.0', text: 'Mantener las prácticas actuales de calidad - están funcionando bien', priority: 'baja' }
+    { condition: 'avg > 2.0', text: 'Alta densidad: imponer code reviews y aumentar cobertura de unit tests al 80% mínimo', priority: 'alta' },
+    { condition: 'avg > 2.0', text: 'Alta densidad: priorizar fixes en módulos con mayor incidencia y plan de refactor', priority: 'alta' },
+    { condition: 'avg > 1.0 && avg <= 2.0', text: 'Densidad moderada: definir Definition of Done con criterios de calidad claros', priority: 'media' },
+    { condition: 'avg > 1.0 && avg <= 2.0', text: 'Promover pair programming en HUs complejas para reducir regresiones', priority: 'media' },
+    { condition: 'default', text: 'Analizar módulos con alta concentración de bugs y planificar refactorizaciones por prioridad', priority: 'media' },
+    { condition: 'default', text: 'Establecer métricas de calidad de código (complejidad, code smells, deuda técnica)', priority: 'media' },
+    { condition: 'default', text: 'Capacitar al equipo en TDD para mejorar prevención de defectos', priority: 'media' },
+    { condition: 'critical > 0.3', text: 'Crítico: alta proporción de bugs críticos; investigar arquitectura y requisitos', priority: 'alta' },
+    { condition: 'avg <= 1.0', text: 'Densidad adecuada: mantener prácticas actuales y monitorizar tendencia', priority: 'baja' }
   ]
 };
 
@@ -93,12 +94,28 @@ export class RecommendationEngine {
     // Filtrar recomendaciones aplicables según las condiciones
     return recommendations
       .filter(rec => this.evaluateCondition(rec.condition, data))
-      .map(rec => ({
-        text: rec.text,
-        priority: rec.priority || 'media',
-        icon: this.getPriorityIcon(rec.priority),
-        parametros: rec.parametros // Incluir parámetros de rangos si existen
-      }));
+      .map(rec => {
+        const priority = rec.priority || 'media';
+        // Marcar recomendaciones accionables (alta/media) con badge 'bajo construcción'
+        const isActionable = (priority.toLowerCase() === 'alta' || priority.toLowerCase() === 'media');
+        const actionBadge = isActionable ? '🚧' : null;
+        const baseIcon = this.getPriorityIcon(rec.priority);
+        // Nota para recomendaciones accionables: indicar que son generales y están en desarrollo
+        const defaultNote = 'En desarrollo: recomendación general — requiere especificación y priorización.';
+        const note = isActionable ? (rec.note || defaultNote) : null;
+        const warningIcon = isActionable ? '⚠️' : null;
+
+        return {
+          text: rec.text,
+          priority: priority,
+          // icon personalizado: badge de construcción + icono por prioridad (si aplica)
+          icon: actionBadge ? `${actionBadge} ${baseIcon}` : baseIcon,
+          // badge de advertencia y nota explicativa cuando es accionable
+          warningIcon,
+          note,
+          parametros: rec.parametros // Incluir parámetros de rangos si existen
+        };
+      });
   }
   
   /**

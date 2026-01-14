@@ -41,12 +41,12 @@ export default function ActionableRecommendations({ data, filteredSprintData }) 
   const recommendations = [];
 
   // Recomendaciones de Cycle Time
-  if (cycleTime > 10) {
+  if (cycleTime > 2) {
     recommendations.push({
       category: 'velocity',
       priority: 'high',
       icon: <Clock className="w-5 h-5" />,
-      title: 'Reducir Cycle Time Crítico',
+      title: 'Reducir Tiempo de Resolución',
       description: `El tiempo promedio de resolución es de ${cycleTime} días, superando el umbral de 10 días.`,
       actions: [
         'Implementar reuniones diarias de 15 min para resolver bloqueadores',
@@ -62,8 +62,8 @@ export default function ActionableRecommendations({ data, filteredSprintData }) 
       category: 'velocity',
       priority: 'medium',
       icon: <Clock className="w-5 h-5" />,
-      title: 'Optimizar Velocidad de Resolución',
-      description: `El cycle time de ${cycleTime} días es aceptable pero puede mejorarse.`,
+      title: '🚧  Generico - Optimizar Velocidad de liberaciones',
+      description: `Hoy se tiene un tiempo aceptable pero implmentando las practicas CI/CD pueden acelerarse  .`,
       actions: [
         'Documentar bugs con mayor detalle para acelerar diagnóstico',
         'Implementar hotfix pipeline para bugs urgentes',
@@ -80,24 +80,24 @@ export default function ActionableRecommendations({ data, filteredSprintData }) 
       category: 'quality',
       priority: 'high',
       icon: <Code className="w-5 h-5" />,
-      title: 'Mejorar Calidad de Código Urgente',
-      description: `Densidad de ${defectDensity.toFixed(2)} bugs/HU indica problemas serios de calidad.`,
+      title: '🚧  Generico - Definir criterios de Calidad de Código',
+      description: `Densidad de bugs indica problemas necesidad de estrategia de calidad en desarrollo.`,
       actions: [
-        'Hacer code reviews obligatorios con al menos 2 aprobadores',
+        'Implementar pipelines con unit test automaticos y practicas CI/CD',
         'Aumentar cobertura de unit tests al 80% mínimo',
-        'Implementar análisis estático de código (SonarQube/ESLint)',
+        'Implementar análisis estático de código automatico(SonarQube/ESLint)',
         'Pair programming obligatorio para HUs complejas',
         'Refactorizar módulos con alta concentración de bugs'
       ],
       impact: 'Muy Alto',
       effort: 'Alto'
     });
-  } else if (defectDensity > 1.0) {
+  } else if (defectDensity  => 0.0) {
     recommendations.push({
       category: 'quality',
       priority: 'medium',
       icon: <Code className="w-5 h-5" />,
-      title: 'Fortalecer Prácticas de Calidad',
+      title: '🚧  Generico - Fortalecer Prácticas de Calidad',
       description: `Densidad de ${defectDensity.toFixed(2)} bugs/HU sugiere espacio para mejora.`,
       actions: [
         'Establecer Definition of Done con criterios de calidad',
@@ -111,7 +111,7 @@ export default function ActionableRecommendations({ data, filteredSprintData }) 
   }
 
   // Recomendaciones de Eficiencia de Resolución
-  if (resolutionEfficiency < 50) {
+  if (resolutionEfficiency < 40) {
     recommendations.push({
       category: 'efficiency',
       priority: 'high',
@@ -128,12 +128,12 @@ export default function ActionableRecommendations({ data, filteredSprintData }) 
       impact: 'Crítico',
       effort: 'Alto'
     });
-  } else if (resolutionEfficiency < 70) {
+  } else if (resolutionEfficiency < 50) {
     recommendations.push({
       category: 'efficiency',
       priority: 'medium',
       icon: <Target className="w-5 h-5" />,
-      title: 'Incrementar Tasa de Resolución',
+      title: '🚧  Generico -Incrementar Tasa de Resolución',
       description: `Eficiencia del ${resolutionEfficiency}% está por debajo del objetivo de 70%.`,
       actions: [
         'Revisar priorización de backlog de bugs',
@@ -147,12 +147,12 @@ export default function ActionableRecommendations({ data, filteredSprintData }) 
   }
 
   // Recomendaciones de Bugs Críticos
-  if (criticalBugsPercent > 30) {
+  if (criticalBugsPercent > 20) {
     recommendations.push({
       category: 'critical',
       priority: 'high',
       icon: <AlertTriangle className="w-5 h-5" />,
-      title: 'Alto Volumen de Bugs Críticos',
+      title: '🚧  Generico - Alto Volumen de Bugs Críticos',
       description: `${criticalBugsPercent.toFixed(1)}% de bugs son críticos - requiere atención inmediata.`,
       actions: [
         'Revisar arquitectura de componentes más afectados',
@@ -169,7 +169,7 @@ export default function ActionableRecommendations({ data, filteredSprintData }) 
       category: 'critical',
       priority: 'medium',
       icon: <AlertTriangle className="w-5 h-5" />,
-      title: 'Reducir Proporción de Bugs Críticos',
+      title: '🚧  Generico - Reducir Proporción de Bugs Críticos',
       description: `${criticalBugsPercent.toFixed(1)}% de bugs críticos supera el objetivo de 20%.`,
       actions: [
         'Mejorar proceso de testing pre-producción',
@@ -187,7 +187,7 @@ export default function ActionableRecommendations({ data, filteredSprintData }) 
       category: 'testing',
       priority: 'medium',
       icon: <CheckCircle className="w-5 h-5" />,
-      title: 'Aumentar Cobertura de Testing',
+      title: '🚧  Generico - Aumentar Cobertura de Testing',
       description: `Solo ${avgTestCasesPerSprint} casos ejecutados por sprint - por debajo de objetivo de 200.`,
       actions: [
         'Automatizar casos de prueba manuales repetitivos',
@@ -206,7 +206,7 @@ export default function ActionableRecommendations({ data, filteredSprintData }) 
       category: 'excellence',
       priority: 'low',
       icon: <TrendingUp className="w-5 h-5" />,
-      title: 'Excelente Desempeño - Mantener Prácticas',
+      title: '🚧  Generico - Excelente Desempeño - Mantener Prácticas',
       description: 'El equipo muestra métricas sobresalientes en calidad y velocidad.',
       actions: [
         'Documentar prácticas exitosas para otros equipos',

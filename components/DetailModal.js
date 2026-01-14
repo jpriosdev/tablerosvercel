@@ -1,5 +1,5 @@
 // components/DetailModal.js
-import React from 'react';
+import React, { useState } from 'react';
 import { X, TrendingUp, TrendingDown, AlertCircle, CheckCircle, BarChart3, Info, Target, Activity, Users, AlertTriangle } from 'lucide-react';
 import { RecommendationEngine } from '../utils/recommendationEngine';
 import { Line } from 'react-chartjs-2';
@@ -30,6 +30,56 @@ export default function DetailModal({ modal, onClose, recommendations }) {
   if (!modal) return null;
 
   const { type, title, data, sparklineData, sprints } = modal;
+  const [selectedModule, setSelectedModule] = useState('Todos');
+  const [showCriticityDetails, setShowCriticityDetails] = useState(false);
+
+  // Si el llamado incluyó la lista de bugs filtrada (por KPI y filtros UI), podemos recomponer
+  // un `effectiveData` que respete la selección de módulo en el modal.
+  let effectiveData = { ...data };
+  const bugsList = data?.bugsList || null;
+  if (bugsList) {
+    const filteredByModule = selectedModule === 'Todos'
+      ? bugsList
+      : bugsList.filter(b => {
+          const mod = (b.module || 'Otros').toString();
+          if (selectedModule === 'Otros') return mod !== 'BOT' && mod !== 'POS';
+          return mod === selectedModule;
+        });
+
+    // Reconstruir breakdown y allPriorities desde filteredByModule
+    const breakdown = { BOT: 0, POS: 0, Total: 0 };
+    const priorities = {};
+    filteredByModule.forEach(b => {
+      const mod = (b.module || 'Otros').toString();
+      if (mod === 'BOT') breakdown.BOT += 1;
+      else if (mod === 'POS') breakdown.POS += 1;
+      else {
+        // contar dentro de POS (no cambiar visual si se desea otros) - pero mantendremos en Total
+      }
+      breakdown.Total += 1;
+
+      const p = b.priority || 'Sin prioridad';
+      if (!priorities[p]) priorities[p] = { count: 0, pending: 0, resolved: 0 };
+      priorities[p].count += 1;
+      const fixed = b.fixed_in_sprint && b.fixed_in_sprint !== 'No encontrado' && b.fixed_in_sprint !== '';
+      const status = (b.status || '').toString().toLowerCase();
+      const isResolved = fixed || status.includes('resuelto') || status.includes('cerr') || status.includes('fixed') || status.includes('closed');
+      if (isResolved) priorities[p].resolved += 1; else priorities[p].pending += 1;
+    });
+
+    effectiveData = {
+      ...effectiveData,
+      breakdown,
+      allPriorities: priorities,
+      total: filteredByModule.length,
+      bugsList: filteredByModule
+    };
+    // también ajustar fields comúnmente usados
+    effectiveData.highest = priorities['Más alta']?.count || 0;
+    effectiveData.high = priorities['Alta']?.count || 0;
+    effectiveData.pending = (priorities['Más alta']?.pending || 0) + (priorities['Alta']?.pending || 0);
+    effectiveData.resolved = (priorities['Más alta']?.resolved || 0) + (priorities['Alta']?.resolved || 0);
+  }
 
   // Componente de gráfico de líneas usando Chart.js
   const TrendChart = ({ data: chartData, label, color = '#754bde', sprints, yAxisLabel = 'Valor' }) => {
@@ -441,6 +491,13 @@ export default function DetailModal({ modal, onClose, recommendations }) {
           {data.avg} días
         </h3>
         <p className="text-sm text-gray-600">Tiempo promedio de resolución</p>
+        {data.breakdown && (
+          <div className="mt-3 grid grid-cols-3 gap-2 text-sm text-gray-700">
+            <div className="bg-gray-50 p-2 rounded text-center">BOT<br/><span className="font-semibold">{data.breakdown.BOT}</span></div>
+            <div className="bg-gray-50 p-2 rounded text-center">POS<br/><span className="font-semibold">{data.breakdown.POS}</span></div>
+            <div className="bg-gray-50 p-2 rounded text-center">Total<br/><span className="font-semibold">{data.breakdown.Total}</span></div>
+          </div>
+        )}
       </div>
 
       {/* Desglose por prioridad */}
@@ -769,6 +826,13 @@ export default function DetailModal({ modal, onClose, recommendations }) {
           {data.avg} bugs/sprint
         </h3>
         <p className="text-sm text-gray-600">Promedio de bugs detectados por sprint</p>
+        {data.breakdown && (
+          <div className="mt-3 grid grid-cols-3 gap-2 text-sm text-gray-700">
+            <div className="bg-gray-50 p-2 rounded text-center">BOT<br/><span className="font-semibold">{data.breakdown.BOT}</span></div>
+            <div className="bg-gray-50 p-2 rounded text-center">POS<br/><span className="font-semibold">{data.breakdown.POS}</span></div>
+            <div className="bg-gray-50 p-2 rounded text-center">Total<br/><span className="font-semibold">{data.breakdown.Total}</span></div>
+          </div>
+        )}
       </div>
 
       {/* Métricas clave */}
@@ -1127,10 +1191,18 @@ export default function DetailModal({ modal, onClose, recommendations }) {
   const renderCriticalBugsDetail = (data) => (
     <div className="space-y-6">
       <div>
-        <h3 className="text-2xl font-bold text-danger-600 mb-2">
-          {data.total} bugs críticos
+        <h3 className="text-4xl font-extrabold text-danger-600 mb-1">
+          {data.total}
         </h3>
+        <div className="text-sm font-medium text-gray-700 mb-2">bugs críticos</div>
         <p className="text-sm text-gray-600">Bugs de prioridad Más alta y Alta detectados</p>
+        {data.breakdown && (
+          <div className="mt-3 grid grid-cols-3 gap-2 text-sm text-gray-700">
+            <div className="bg-gray-50 p-2 rounded text-center">BOT<br/><span className="font-semibold">{data.breakdown.BOT}</span></div>
+            <div className="bg-gray-50 p-2 rounded text-center">POS<br/><span className="font-semibold">{data.breakdown.POS}</span></div>
+            <div className="bg-gray-50 p-2 rounded text-center">Total<br/><span className="font-semibold">{data.breakdown.Total}</span></div>
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-2 gap-4">
@@ -1145,18 +1217,41 @@ export default function DetailModal({ modal, onClose, recommendations }) {
       </div>
 
       <div>
-        <h4 className="font-semibold text-gray-800 mb-3">Distribución de Criticidad</h4>
+        <div className="flex items-center justify-between mb-3">
+          <h4 className="font-semibold text-gray-800">Distribución de Criticidad</h4>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowCriticityDetails(d => !d)}
+              className="text-sm px-3 py-1 rounded border bg-white hover:bg-gray-50"
+            >
+              {showCriticityDetails ? 'Ocultar detalles' : 'Ver detalles'}
+            </button>
+          </div>
+        </div>
         <div className="flex flex-col md:flex-row gap-6 items-center">
           {/* Gráfico circular */}
           <div className="flex-shrink-0">
             <svg width="220" height="220" viewBox="0 0 220 220" className="mx-auto">
               {(() => {
-                const priorities = data.allPriorities || {};
-                const masAlta = priorities['Más alta']?.count || 0;
+                // Aceptar `data.allPriorities` si existe; si no, reconstruir desde `data.bugsList`
+                let priorities = data.allPriorities || {};
+                if (!priorities || Object.keys(priorities).length === 0) {
+                  priorities = {};
+                  (data.bugsList || []).forEach(b => {
+                    const p = (b.priority || 'Sin prioridad');
+                    if (!priorities[p]) priorities[p] = { count: 0, pending: 0, resolved: 0 };
+                    priorities[p].count += 1;
+                    const fixed = b.fixed_in_sprint && b.fixed_in_sprint !== 'No encontrado' && b.fixed_in_sprint !== '';
+                    const st = (b.status || '').toString().toLowerCase();
+                    const isResolved = fixed || st.includes('resuelto') || st.includes('cerr') || st.includes('fixed') || st.includes('closed');
+                    if (isResolved) priorities[p].resolved += 1; else priorities[p].pending += 1;
+                  });
+                }
+                const masAlta = priorities['Más alta']?.count || priorities['Mas alta']?.count || 0;
                 const alta = priorities['Alta']?.count || 0;
                 const media = priorities['Media']?.count || 0;
                 const baja = priorities['Baja']?.count || 0;
-                const masBaja = priorities['Más baja']?.count || 0;
+                const masBaja = priorities['Más baja']?.count || priorities['Mas baja']?.count || 0;
                 const total = masAlta + alta + media + baja + masBaja || 1;
                 
                 const colors = {
@@ -1217,6 +1312,41 @@ export default function DetailModal({ modal, onClose, recommendations }) {
                         />
                       );
                     })}
+                    {showCriticityDetails && (() => {
+                      // Añadir etiquetas con valor y % en el centro aproximado de cada porción
+                      let angleAcc = -90;
+                      return values.map((item, idx) => {
+                        const percentage = (item.value / total) * 100;
+                        const angle = (percentage / 100) * 360;
+                        const midAngle = angleAcc + angle / 2;
+                        const midRad = (midAngle * Math.PI) / 180;
+                        const labelR = radius * 0.55;
+                        const tx = centerX + labelR * Math.cos(midRad);
+                        const ty = centerY + labelR * Math.sin(midRad);
+                        angleAcc += angle;
+                        if (item.value === 0) return null;
+                        // elegir color de texto con buen contraste
+                        const hex = (item.color || '#000000').replace('#','');
+                        const r = parseInt(hex.substring(0,2),16);
+                        const g = parseInt(hex.substring(2,4),16);
+                        const b = parseInt(hex.substring(4,6),16);
+                        const luminance = (0.299*r + 0.587*g + 0.114*b)/255;
+                        const textColor = luminance > 0.6 ? '#111827' : '#ffffff';
+                        return (
+                          <text
+                            key={`lbl-${idx}`}
+                            x={tx}
+                            y={ty}
+                            textAnchor="middle"
+                            fill={textColor}
+                            fontSize="10"
+                            fontWeight="600"
+                          >
+                            {`${item.value} (${Math.round(percentage)}%)`}
+                          </text>
+                        );
+                      });
+                    })()}
                     {/* Centro blanco */}
                     <circle cx={centerX} cy={centerY} r="40" fill="white" />
                     <text
@@ -1375,11 +1505,20 @@ export default function DetailModal({ modal, onClose, recommendations }) {
     return (
     <div className="space-y-6">
       <div className="bg-orange-50 p-6 rounded-lg border border-orange-200">
-        <h3 className="text-2xl font-bold text-warning-600 mb-2">
-          {data.pending} pendientes
+        <h3 className="text-4xl font-extrabold text-warning-600 mb-1">
+          {data.total}
         </h3>
-        <p className="text-sm text-gray-600">Bugs críticos sin resolver</p>
+        <div className="text-sm font-medium text-gray-800 mb-1">bugs críticos</div>
+        <p className="text-sm text-gray-600">{data.pending} pendientes sin resolver — {data.resolved || (data.total - data.pending)} resueltos</p>
       </div>
+
+      {data.breakdown && (
+        <div className="grid grid-cols-3 gap-2">
+          <div className="text-center bg-gray-50 p-2 rounded">BOT<br/><span className="font-semibold">{data.breakdown.BOT}</span></div>
+          <div className="text-center bg-gray-50 p-2 rounded">POS<br/><span className="font-semibold">{data.breakdown.POS}</span></div>
+          <div className="text-center bg-gray-50 p-2 rounded">Total<br/><span className="font-semibold">{data.breakdown.Total}</span></div>
+        </div>
+      )}
 
       <div className="grid grid-cols-3 gap-4">
         <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
@@ -1642,13 +1781,28 @@ export default function DetailModal({ modal, onClose, recommendations }) {
 
         {/* Content */}
         <div className="p-6">
-          {modal.type === 'cycleTime' && renderCycleTimeDetail(modal.data)}
+          {/* Selector de Módulo dentro del modal */}
+          <div className="mb-4 flex items-center gap-3">
+            <span className="text-sm font-medium text-gray-700">Módulo:</span>
+            {['Todos', 'POS', 'BOT', 'Otros'].map(mod => (
+              <button
+                key={mod}
+                onClick={() => setSelectedModule(mod)}
+                className={`px-3 py-1 text-xs font-semibold rounded-full transition-all whitespace-nowrap ${selectedModule === mod ? 'bg-executive-600 text-white shadow' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+              >
+                {mod}
+              </button>
+            ))}
+            <div className="ml-auto text-xs text-gray-500">Mostrando: {selectedModule}</div>
+          </div>
+
+          {modal.type === 'cycleTime' && renderCycleTimeDetail(effectiveData)}
           {modal.type === 'automationCoverage' && renderAutomationCoverageDetail(modal.data)}
-          {modal.type === 'defectDensity' && renderDefectDensityDetail(modal.data)}
-          {modal.type === 'testCases' && renderTestCasesDetail(modal.data)}
-          {modal.type === 'resolutionEfficiency' && renderResolutionEfficiencyDetail(modal.data)}
-          {modal.type === 'criticalBugs' && renderCriticalBugsDetail(modal.data)}
-          {modal.type === 'criticalBugsStatus' && renderCriticalBugsStatusDetail(modal.data)}
+          {modal.type === 'defectDensity' && renderDefectDensityDetail(effectiveData)}
+          {modal.type === 'testCases' && renderTestCasesDetail(effectiveData)}
+          {modal.type === 'resolutionEfficiency' && renderResolutionEfficiencyDetail(effectiveData)}
+          {modal.type === 'criticalBugs' && renderCriticalBugsDetail(effectiveData)}
+          {modal.type === 'criticalBugsStatus' && renderCriticalBugsStatusDetail(effectiveData)}
         </div>
 
         {/* Footer */}

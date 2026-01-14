@@ -28,6 +28,7 @@ import ModuleAnalysis from './ModuleAnalysis';
 import ExecutiveRecommendations from './ExecutiveRecommendations';
 import QualityMetrics from './QualityMetrics';
 import DetailModal from './DetailModal';
+import QualityRadarChart from './QualityRadarChart';
 import SprintComparison from './SprintComparison';
 import ActionableRecommendations from './ActionableRecommendations';
 import { QADataProcessor } from '../utils/dataProcessor'; // Nueva importación
@@ -204,8 +205,7 @@ export default function ExecutiveDashboard({
     { id: 'overview', label: 'Resumen Ejecutivo', icon: <BarChart3 className="w-4 h-4" /> },
     { id: 'quality', label: 'Métricas de Calidad', icon: <Target className="w-4 h-4" /> },
     { id: 'teams', label: 'Análisis de Equipos', icon: <Users className="w-4 h-4" /> },
-    { id: 'trends', label: 'Tendencias', icon: <Activity className="w-4 h-4" /> },
-    { id: 'recommendations', label: 'Recomendaciones', icon: <CheckCircle className="w-4 h-4" /> }
+    { id: 'recommendations', label: 'Roadmap', icon: <CheckCircle className="w-4 h-4" /> }
   ];
 
   return (
@@ -348,7 +348,6 @@ export default function ExecutiveDashboard({
           {activeTab === 'overview' && <OverviewTab data={currentData} recommendations={recommendations} />}
           {activeTab === 'quality' && <QualityTab data={currentData} />}
           {activeTab === 'teams' && <TeamsTab data={currentData} />}
-          {activeTab === 'trends' && <TrendsTab data={currentData} />}
           {activeTab === 'recommendations' && <RecommendationsTab data={currentData} />}
         </div>
       </div>
@@ -414,35 +413,60 @@ function OverviewTab({ data, recommendations }) {
 
   // Función para aplicar filtros de módulo y prioridad a bugsByPriority
   const getFilteredBugsByPriority = () => {
-    const baseBugs = { ...data.bugsByPriority };
-    let multiplier = 1;
-
-    // Aplicar filtro de módulo (POS: 62%, BOT: 37%, Otros: 1%)
-    if (!selectedModules.includes('Todos')) {
-      const moduleRatios = {
-        'POS': 0.62,
-        'BOT': 0.37,
-        'Otros': 0.01
-      };
-      
-      multiplier = selectedModules.reduce((sum, mod) => sum + (moduleRatios[mod] || 0), 0);
+    // Si no hay filtros activos (módulo/sprint/prioridad), devolver el agregado original
+    const noModuleFilter = selectedModules.includes('Todos');
+    const noPriorityFilter = selectedPriorities.includes('Todos');
+    const noSprintFilter = selectedSprints.includes('Todos');
+    if (noModuleFilter && noPriorityFilter && noSprintFilter) {
+      return { ...data.bugsByPriority };
     }
 
-    // Aplicar filtro de prioridad
-    const filteredResult = {};
-    Object.entries(baseBugs).forEach(([priority, data]) => {
-      const isSelected = selectedPriorities.includes('Todos') || selectedPriorities.includes(priority);
-      if (isSelected) {
-        filteredResult[priority] = {
-          ...data,
-          count: Math.round(data.count * multiplier),
-          pending: Math.round(data.pending * multiplier),
-          resolved: Math.round(data.resolved * multiplier)
-        };
+    // Construir conteo real a partir del listado de bugs para mayor precisión
+    const result = {};
+    const bugsList = data.bugs || [];
+
+    bugsList.forEach(bug => {
+      const bugPriority = bug.priority || 'Sin prioridad';
+      const bugModule = bug.module || 'Otros';
+      const bugSprint = bug.sprint || bug.found_in_sprint || '';
+      const bugStatus = (bug.status || '').toString();
+
+      // Aplicar filtros
+      if (!noSprintFilter) {
+        if (!selectedSprints.includes(bugSprint)) return;
       }
+      if (!noModuleFilter) {
+        if (!selectedModules.includes(bugModule)) return;
+      }
+      if (!noPriorityFilter) {
+        if (!selectedPriorities.includes(bugPriority)) return;
+      }
+      // Aplicar filtro por estado si está activo
+      const noStatusFilter = selectedStatus.includes('Todos');
+      if (!noStatusFilter) {
+        // Normalizar comparaciones: permitir coincidencias parciales y case-insensitive
+        const normalizedBugStatus = bugStatus.toString().toLowerCase();
+        const matchesStatus = selectedStatus.some(st => {
+          const ns = (st || '').toString().toLowerCase();
+          return normalizedBugStatus.includes(ns) || ns.includes(normalizedBugStatus);
+        });
+        if (!matchesStatus) return;
+      }
+
+      if (!result[bugPriority]) result[bugPriority] = { count: 0, pending: 0, resolved: 0 };
+      result[bugPriority].count = (result[bugPriority].count || 0) + 1;
+
+      // Determinar si está resuelto: usar fixed_in_sprint o status
+      const fixed = bug.fixed_in_sprint && bug.fixed_in_sprint !== 'No encontrado' && bug.fixed_in_sprint !== '';
+      const status = (bug.status || '').toString().toLowerCase();
+      const isResolved = fixed || status.includes('resuelto') || status.includes('cerr') || status.includes('fixed') || status.includes('closed');
+
+      if (isResolved) result[bugPriority].resolved = (result[bugPriority].resolved || 0) + 1;
+      else result[bugPriority].pending = (result[bugPriority].pending || 0) + 1;
     });
 
-    return Object.keys(filteredResult).length > 0 ? filteredResult : baseBugs;
+    // Si después de filtrar no hay resultados, devolver el agregado original
+    return Object.keys(result).length > 0 ? result : { ...data.bugsByPriority };
   };
 
   // Función para aplicar filtro de módulo
@@ -488,6 +512,126 @@ function OverviewTab({ data, recommendations }) {
   const criticalBugsRatio = totalBugs > 0 
     ? Math.round((criticalBugsPending / totalBugs) * 100) 
     : kpis.criticalBugsRatio || 0;
+
+  // Desglose por módulo (BOT / POS / Total) — usar totales originales para proporciones
+  const originalModuleCounts = {
+    BOT: data.bugsByModule?.BOT?.count || 0,
+    POS: data.bugsByModule?.POS?.count || 0
+  };
+  originalModuleCounts.Otros = data.bugsByModule?.Otros?.count || 0;
+  originalModuleCounts.Total = (originalModuleCounts.BOT || 0) + (originalModuleCounts.POS || 0) + (originalModuleCounts.Otros || 0) || totalBugs || 0;
+
+  // compute breakdown per module using the same source (data.bugs) and current filters
+  const computeBreakdownByModule = (predicate = () => true) => {
+    const counts = { BOT: 0, POS: 0, Otros: 0, Total: 0 };
+    const bugsList = data.bugs || [];
+    const sprintNames = (filteredSprintData || []).map(s => s.sprint || s.name || s.id);
+
+    bugsList.forEach(bug => {
+      const bugPriority = bug.priority || '';
+      const bugModule = bug.module || 'Otros';
+      const bugSprint = bug.sprint || bug.found_in_sprint || '';
+
+      // Apply current UI filters (sprints/modules/priorities)
+      if (!selectedSprints.includes('Todos')) {
+        if (!sprintNames.includes(bugSprint)) return;
+      }
+      if (!selectedModules.includes('Todos')) {
+        if (!selectedModules.includes(bugModule)) return;
+      }
+      if (!selectedPriorities.includes('Todos')) {
+        if (!selectedPriorities.includes(bugPriority)) return;
+      }
+
+      // Aplicar filtro por estado si está activo
+      const noStatusFilter = selectedStatus.includes('Todos');
+      if (!noStatusFilter) {
+        const bugStatus = (bug.status || '').toString().toLowerCase();
+        const matchesStatus = selectedStatus.some(st => {
+          const ns = (st || '').toString().toLowerCase();
+          return bugStatus.includes(ns) || ns.includes(bugStatus);
+        });
+        if (!matchesStatus) return;
+      }
+
+      // Apply KPI-specific predicate
+      if (!predicate(bug)) return;
+
+      if (bugModule === 'BOT') counts.BOT += 1;
+      else if (bugModule === 'POS') counts.POS += 1;
+      else counts.Otros += 1;
+      counts.Total += 1;
+    });
+
+    return counts;
+  };
+
+  // Devuelve lista de bugs filtrados según predicate y filtros UI (sprints/modules/priorities)
+  const computeFilteredBugs = (predicate = () => true) => {
+    const bugsList = data.bugs || [];
+    const sprintNames = (filteredSprintData || []).map(s => s.sprint || s.name || s.id);
+    const results = [];
+
+    bugsList.forEach(bug => {
+      const bugPriority = bug.priority || '';
+      const bugModule = bug.module || 'Otros';
+      const bugSprint = bug.sprint || bug.found_in_sprint || '';
+
+      if (!selectedSprints.includes('Todos')) {
+        if (!sprintNames.includes(bugSprint)) return;
+      }
+      if (!selectedModules.includes('Todos')) {
+        if (!selectedModules.includes(bugModule)) return;
+      }
+      if (!selectedPriorities.includes('Todos')) {
+        if (!selectedPriorities.includes(bugPriority)) return;
+      }
+
+      // Aplicar filtro por estado si está activo
+      const noStatusFilter = selectedStatus.includes('Todos');
+      if (!noStatusFilter) {
+        const bugStatus = (bug.status || '').toString().toLowerCase();
+        const matchesStatus = selectedStatus.some(st => {
+          const ns = (st || '').toString().toLowerCase();
+          return bugStatus.includes(ns) || ns.includes(bugStatus);
+        });
+        if (!matchesStatus) return;
+      }
+
+      if (!predicate(bug)) return;
+      results.push(bug);
+    });
+
+    return results;
+  };
+
+  const distributeByModule = (value) => {
+    // Si hay un filtro de módulo activo, mostrar el valor directamente en esa columna
+    if (!selectedModules.includes('Todos')) {
+      // Si sólo una selección (ej. ['POS']) devolverla directamente
+      if (selectedModules.length === 1) {
+        const only = selectedModules[0];
+        if (only === 'POS') return { BOT: 0, POS: value, Total: value };
+        if (only === 'BOT') return { BOT: value, POS: 0, Total: value };
+      }
+      // Si varias seleccionadas, distribuir proporcionalmente entre las seleccionadas
+      const includedCounts = selectedModules.reduce((acc, mod) => {
+        if (mod === 'POS' || mod === 'BOT') acc[mod] = originalModuleCounts[mod] || 0;
+        return acc;
+      }, { BOT: 0, POS: 0 });
+      const baseIncluded = (includedCounts.BOT || 0) + (includedCounts.POS || 0) || 1;
+      const bot = Math.round(((includedCounts.BOT || 0) / baseIncluded) * value) || 0;
+      const pos = Math.round(((includedCounts.POS || 0) / baseIncluded) * value) || 0;
+      return { BOT: bot, POS: pos, Total: bot + pos };
+    }
+
+    // Sin filtro: distribuir según proporción original entre BOT/POS
+    const base = originalModuleCounts.Total || totalBugs || 1;
+    const bot = Math.round(((originalModuleCounts.BOT || 0) / base) * value) || 0;
+    const pos = Math.round(((originalModuleCounts.POS || 0) / base) * value) || 0;
+    const otros = Math.round(((originalModuleCounts.Otros || 0) / base) * value) || 0;
+    return { BOT: bot, POS: pos, Otros: otros, Total: bot + pos + otros };
+  };
 
   // Calcular tendencias comparando primera mitad vs segunda mitad de sprints seleccionados
   const calculateTrend = (getData) => {
@@ -901,75 +1045,8 @@ function OverviewTab({ data, recommendations }) {
         </div>
       )}
 
-      {/* Primera fila - Métricas principales */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {/* 1. COBERTURA: Media de Casos */}
-        <KPICard
-          title="Media de Casos Ejecutados por Sprint"
-          value={avgTestCasesPerSprint}
-          icon={<Activity className="w-6 h-6 text-blue-600" />}
-          trend={testCasesTrend}
-          status={avgTestCasesPerSprint >= 170 ? "success" : "warning"}
-          subtitle={`${totalTestCases} casos ejecutados total`}
-          formula={`Media = ${totalTestCases} / ${filteredSprintData?.length || 1}`}
-          tooltip={"La media de casos ejecutados por sprint indica la cantidad promedio de pruebas realizadas en cada ciclo. Es útil para evaluar la productividad y la cobertura de pruebas en el tiempo."}
-          onClick={() => setDetailModal({
-            type: 'testCases',
-            title: 'Análisis de Casos de Prueba Ejecutados',
-            data: {
-              avg: avgTestCasesPerSprint,
-              total: totalTestCases,
-              sprints: filteredSprintData?.length || 0
-            },
-            sparklineData: getSparklineData('testCases'),
-            sprints: filteredSprintData
-          })}
-          detailData={{ avg: avgTestCasesPerSprint, total: totalTestCases }}
-        />
-        
-        {/* 2. CALIDAD DEL PRODUCTO: Densidad de Defectos */}
-        <KPICard
-          title="Densidad de Defectos por Sprint"
-          value={defectDensityData.avg}
-          icon={<Target className="w-6 h-6 text-orange-600" />}
-          trend={defectDensityData.avg <= 20 ? 5 : -5}
-          status={defectDensityData.avg <= 20 ? "success" : defectDensityData.avg <= 30 ? "warning" : "danger"}
-          subtitle={`Máx: ${defectDensityData.max} | Mín: ${defectDensityData.min} bugs/sprint`}
-          formula={`Promedio = ${defectDensityData.total} bugs / ${defectDensityData.sprints} sprints`}
-          tooltip={"Densidad de Defectos por Sprint: Promedio de bugs detectados por sprint. Objetivo: ≤20 bugs/sprint indica buena calidad. >30 requiere revisión de procesos de desarrollo y testing."}
-          onClick={() => setDetailModal({
-            type: 'defectDensity',
-            title: 'Análisis de Densidad de Defectos por Sprint',
-            data: defectDensityData,
-            sparklineData: getSparklineData('defectDensity'),
-            sprints: filteredSprintData
-          })}
-          detailData={defectDensityData}
-        />
-        
-        {/* 3. VELOCIDAD: Tiempo Promedio de Resolución */}
-        <KPICard
-          title="Tiempo Promedio de Resolución"
-          value={`${cycleTimeData.avg} días`}
-          icon={<Clock className="w-6 h-6 text-executive-600" />}
-          trend={cycleTimeData.avg <= 7 ? 10 : -10}
-          status={cycleTimeData.avg <= 7 ? "success" : cycleTimeData.avg <= 10 ? "warning" : "danger"}
-          subtitle={`Críticos: ${cycleTimeData.byPriority.critical}d | Altos: ${cycleTimeData.byPriority.high}d`}
-          formula={`Basado en eficiencia: ${resolutionEfficiency}%`}
-          tooltip={"Tiempo de Ciclo: Tiempo promedio desde la detección hasta la resolución de bugs. Métrica clave para medir la velocidad de respuesta del equipo. Objetivo: ≤7 días para mantener agilidad."}
-          onClick={() => setDetailModal({
-            type: 'cycleTime',
-            title: 'Análisis Detallado de Tiempo de Resolución',
-            data: cycleTimeData,
-            sparklineData: getSparklineData('cycleTime'),
-            sprints: filteredSprintData
-          })}
-          detailData={cycleTimeData}
-        />
-      </div>
-
-      {/* Segunda fila - Métricas de seguimiento */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {/* Primera fila - Métricas principales (reubicadas) */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
         {/* 1. RIESGO CRÍTICO: Bugs Críticos Detectados */}
         <KPICard
           title="Bugs Críticos Detectados"
@@ -980,6 +1057,10 @@ function OverviewTab({ data, recommendations }) {
           subtitle={`${Math.round((criticalBugsTotal / totalBugs) * 100)}% del total de bugs`}
           formula={`Críticos = Más alta (${criticalBugsMasAlta}) + Alta (${criticalBugsAlta})`}
           tooltip={"Total de bugs críticos detectados con prioridad 'Más alta' y 'Alta'. Indica el volumen de incidencias graves que requieren atención inmediata."}
+          breakdown={computeBreakdownByModule(bug => {
+            const p = (bug.priority || '').toString();
+            return p === 'Más alta' || p === 'Alta';
+          })}
           onClick={() => setDetailModal({
             type: 'criticalBugs',
             title: 'Análisis de Bugs Críticos Detectados',
@@ -988,24 +1069,60 @@ function OverviewTab({ data, recommendations }) {
               highest: criticalBugsMasAlta,
               high: criticalBugsAlta,
               totalBugs: totalBugs,
-              allPriorities: filteredBugsByPriority
+              allPriorities: filteredBugsByPriority,
+              breakdown: computeBreakdownByModule(bug => {
+                const p = (bug.priority || '').toString();
+                return p === 'Más alta' || p === 'Alta';
+              }),
+              bugsList: computeFilteredBugs(bug => {
+                const p = (bug.priority || '').toString();
+                return p === 'Más alta' || p === 'Alta';
+              })
             },
             sparklineData: getSparklineData('criticalBugs'),
             sprints: filteredSprintData
           })}
           detailData={{ total: criticalBugsTotal }}
         />
-        
+
         {/* 2. SEGUIMIENTO CRÍTICO: Estado de Bugs Críticos */}
         <KPICard
           title="Estado Bugs Críticos"
-          value={`${criticalBugsPending}`}
+          value={`${criticalBugsTotal}`}
           icon={<AlertTriangle className="w-6 h-6 text-warning-600" />}
           trend={criticalBugsTrend}
-          status={criticalBugsPending <= 10 ? "success" : "danger"}
-          subtitle={`${criticalBugsTotal - criticalBugsPending} resueltos de ${criticalBugsTotal} críticos`}
-          formula={`Pendientes = ${criticalBugsPending} | Resueltos = ${criticalBugsTotal - criticalBugsPending}`}
-          tooltip={"Estado de los bugs críticos: muestra cuántos están pendientes y cuántos ya fueron resueltos. Los pendientes requieren atención inmediata para no bloquear releases."}
+          status={criticalBugsTotal <= 20 ? "success" : "danger"}
+          /* Mostrar total como valor principal y pendientes como secundario */
+          valueLabel={'Total'}
+          secondaryValue={criticalBugsPending}
+          secondaryLabel={'Pendientes'}
+          tooltip={"Estado de los bugs críticos: total, con pendientes destacados para atención. Haz clic para ver el desglose Pendientes/Resueltos por módulo."}
+          breakdown={(function(){
+            // Pending per module
+            const pendingPredicate = (bug) => {
+              const p = (bug.priority || '').toString();
+              const fixed = bug.fixed_in_sprint && bug.fixed_in_sprint !== 'No encontrado' && bug.fixed_in_sprint !== '';
+              const status = (bug.status || '').toString().toLowerCase();
+              const isResolved = fixed || status.includes('resuelto') || status.includes('cerr') || status.includes('fixed') || status.includes('closed');
+              return (p === 'Más alta' || p === 'Alta') && !isResolved;
+            };
+            // Resolved per module (critical resolved)
+            const resolvedPredicate = (bug) => {
+              const p = (bug.priority || '').toString();
+              const fixed = bug.fixed_in_sprint && bug.fixed_in_sprint !== 'No encontrado' && bug.fixed_in_sprint !== '';
+              const status = (bug.status || '').toString().toLowerCase();
+              const isResolved = fixed || status.includes('resuelto') || status.includes('cerr') || status.includes('fixed') || status.includes('closed');
+              return (p === 'Más alta' || p === 'Alta') && isResolved;
+            };
+
+            const pending = computeBreakdownByModule(pendingPredicate);
+            const resolved = computeBreakdownByModule(resolvedPredicate);
+            return {
+              BOT: { pending: pending.BOT || 0, resolved: resolved.BOT || 0 },
+              POS: { pending: pending.POS || 0, resolved: resolved.POS || 0 },
+              Total: { pending: pending.Total || 0, resolved: resolved.Total || 0 }
+            };
+          })()}
           onClick={() => setDetailModal({
             type: 'criticalBugsStatus',
             title: 'Estado de Bugs Críticos',
@@ -1016,14 +1133,55 @@ function OverviewTab({ data, recommendations }) {
               allPriorities: filteredBugsByPriority,
               masAlta: criticalBugsMasAlta,
               alta: criticalBugsAlta
+            ,
+              // Pasar breakdown completo (pendientes + resueltos) y la lista completa de bugs críticos
+              breakdown: (function(){
+                const all = computeBreakdownByModule(bug => {
+                  const p = (bug.priority || '').toString();
+                  return p === 'Más alta' || p === 'Alta';
+                });
+                return { BOT: all.BOT || 0, POS: all.POS || 0, Total: all.Total || 0 };
+              })(),
+              bugsList: computeFilteredBugs(bug => {
+                const p = (bug.priority || '').toString();
+                return p === 'Más alta' || p === 'Alta';
+              })
             },
             sparklineData: getSparklineData('criticalBugsPending'),
             sprints: filteredSprintData
           })}
           detailData={{ pending: criticalBugsPending }}
         />
+
+        {/* Eficiencia movida a la segunda fila para orden coherente (oculta) */}
         
-        {/* 3. EFICIENCIA: Eficiencia de Resolución */}
+        {/* 3. VELOCIDAD: Tiempo Promedio de Resolución (movida a la siguiente fila) */}
+      </div>
+
+      {/* Segunda fila - Métricas de seguimiento (reubicadas: Densidad + Tasa) */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
+        {/* VELOCIDAD: Tiempo Promedio de Resolución (bajada) */}
+        <KPICard
+          title="Tiempo Promedio de Resolución"
+          value={`${cycleTimeData.avg} días`}
+          icon={<Clock className="w-6 h-6 text-executive-600" />}
+          trend={cycleTimeData.avg <= 7 ? 10 : -10}
+          status={cycleTimeData.avg <= 7 ? "success" : cycleTimeData.avg <= 10 ? "warning" : "danger"}
+          subtitle={`Críticos: ${cycleTimeData.byPriority.critical}d | Altos: ${cycleTimeData.byPriority.high}d`}
+          formula={`Basado en eficiencia: ${resolutionEfficiency}%`}
+          tooltip={"Tiempo de Ciclo: Tiempo promedio desde la detección hasta la resolución de bugs. Métrica clave para medir la velocidad de respuesta del equipo. Objetivo: ≤7 días para mantener agilidad."}
+          breakdown={computeBreakdownByModule(() => true)}
+          onClick={() => setDetailModal({
+            type: 'cycleTime',
+            title: 'Análisis Detallado de Tiempo de Resolución',
+            data: { ...cycleTimeData, breakdown: computeBreakdownByModule(() => true), bugsList: computeFilteredBugs(() => true) },
+            sparklineData: getSparklineData('cycleTime'),
+            sprints: filteredSprintData
+          })}
+          detailData={cycleTimeData}
+        />
+        {/* EFICIENCIA: Eficiencia de Resolución (reubicada, oculta) */}
+        {false && (
         <KPICard
           title="Eficiencia de Resolución"
           value={`${resolutionEfficiency}%`}
@@ -1033,6 +1191,7 @@ function OverviewTab({ data, recommendations }) {
           subtitle={`${bugsClosed} resueltos de ${totalBugs} total (${totalBugs - bugsClosed} abiertos)`}
           formula={`Eficiencia = ${bugsClosed} / ${totalBugs} × 100`}
           tooltip={"La eficiencia de resolución mide el porcentaje de bugs solucionados respecto al total reportado. Es clave para evaluar la capacidad del equipo de cerrar incidencias y mantener la calidad del producto."}
+          breakdown={computeBreakdownByModule(() => true)}
           onClick={() => setDetailModal({
             type: 'resolutionEfficiency',
             title: 'Análisis de Eficiencia de Resolución',
@@ -1040,13 +1199,50 @@ function OverviewTab({ data, recommendations }) {
               efficiency: resolutionEfficiency,
               total: totalBugs,
               resolved: bugsClosed,
-              pending: totalBugs - bugsClosed
+              pending: totalBugs - bugsClosed,
+              breakdown: computeBreakdownByModule(() => true)
             },
             sparklineData: getSparklineData('resolutionEfficiency'),
             sprints: filteredSprintData
           })}
           detailData={{ efficiency: resolutionEfficiency }}
         />
+        )}
+        {/* Densidad de Defectos */}
+        <KPICard
+          title="Densidad de Defectos por Sprint"
+          value={defectDensityData.avg}
+          icon={<Target className="w-6 h-6 text-orange-600" />}
+          trend={defectDensityData.avg <= 20 ? 5 : -5}
+          status={defectDensityData.avg <= 20 ? "success" : defectDensityData.avg <= 30 ? "warning" : "danger"}
+          subtitle={`Máx: ${defectDensityData.max} | Mín: ${defectDensityData.min} bugs/sprint`}
+          formula={`Promedio = ${defectDensityData.total} bugs / ${defectDensityData.sprints} sprints`}
+          tooltip={"Densidad de Defectos por Sprint: Promedio de bugs detectados por sprint. Objetivo: ≤20 bugs/sprint indica buena calidad. >30 requiere revisión de procesos de desarrollo y testing."}
+          breakdown={computeBreakdownByModule(() => true)}
+          onClick={() => setDetailModal({
+            type: 'defectDensity',
+            title: 'Análisis de Densidad de Defectos por Sprint',
+            data: { ...defectDensityData, breakdown: computeBreakdownByModule(() => true), bugsList: computeFilteredBugs(() => true) },
+            sparklineData: getSparklineData('defectDensity'),
+            sprints: filteredSprintData
+          })}
+          detailData={defectDensityData}
+        />
+
+        {/* Tasa de Fuga (ocultada) */}
+        {false && kpis.bugLeakageRate !== undefined && (
+          <KPICard
+            title="Tasa de Fuga"
+            value={`${kpis.bugLeakageRate}%`}
+            icon={<TrendingUp className="w-6 h-6 text-red-600" />}
+            trend={0}
+            status={kpis.bugLeakageRate <= 5 ? "success" : "danger"}
+            subtitle="Bugs en producción"
+            tooltip={"La tasa de fuga mide el porcentaje de bugs que escaparon a producción. Un valor bajo indica buena calidad de pruebas pre-producción."}
+          />
+        )}
+
+        <div />
       </div>
 
       {/* Comparación Sprint-over-Sprint */}
@@ -1054,7 +1250,8 @@ function OverviewTab({ data, recommendations }) {
 
       {/* Segunda fila de métricas adicionales */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Ficha 7: Cobertura de Automatización */}
+        {/* Ficha 7: Cobertura de Automatización (oculta) */}
+        {false && (
         <KPICard
           title="Cobertura de Automatización"
           value={`${automationData.coverage}%`}
@@ -1072,8 +1269,9 @@ function OverviewTab({ data, recommendations }) {
           })}
           isEstimated={true}
         />
+        )}
         
-        {kpis.testExecutionRate && (
+        {false && kpis.testExecutionRate && (
           <KPICard
             title="Tasa de Ejecución"
             value={`${kpis.testExecutionRate}%`}
@@ -1085,7 +1283,7 @@ function OverviewTab({ data, recommendations }) {
           />
         )}
         
-        {kpis.bugLeakageRate !== undefined && (
+        {false && kpis.bugLeakageRate !== undefined && (
           <KPICard
             title="Tasa de Fuga"
             value={`${kpis.bugLeakageRate}%`}
@@ -1291,121 +1489,7 @@ function TeamsTab({ data }) {
   );
 }
 
-function TrendsTab({ data }) {
-  const sprintData = data.sprintData || data.trends?.bugsPerSprint || [];
-  
-  return (
-    <div className="space-y-8">
-      {/* Tendencias de Sprint */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <div className="executive-card">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">
-            Evolución de Bugs por Sprint
-          </h3>
-          <div className="space-y-4">
-            {sprintData.map((sprint, index) => (
-              <div key={sprint.sprint || index} className="flex items-center">
-                <span className="w-16 text-sm font-medium text-gray-600">
-                  S{sprint.sprint || index + 1}:
-                </span>
-                <div className="flex-1 mx-4">
-                  <div className="bg-gray-200 rounded-full h-4 relative">
-                    <div
-                      className={`h-4 rounded-full ${
-                        sprint.bugs > 30 ? 'bg-red-500' :
-                        sprint.bugs > 20 ? 'bg-yellow-500' : 'bg-green-500'
-                      }`}
-                      style={{ width: `${Math.min((sprint.bugs / 50) * 100, 100)}%` }}
-                    />
-                  </div>
-                </div>
-                <span className="w-16 text-sm font-medium text-gray-900">
-                  {sprint.bugs} bugs
-                </span>
-                {sprint.change !== 0 && (
-                  <span className={`w-16 text-xs ml-2 ${
-                    sprint.change > 0 ? 'text-red-600' : 'text-green-600'
-                  }`}>
-                    {sprint.change > 0 ? '+' : ''}{sprint.change}%
-                  </span>
-                )}
-              </div>
-            ))}
-          </div>
-          
-          {sprintData.length > 1 && (
-            <div className="mt-6 p-4 bg-green-50 rounded-lg">
-              <div className="flex items-center">
-                <TrendingDown className="w-5 h-5 text-green-600 mr-2" />
-                <p className="text-sm text-green-800 font-medium">
-                  Tendencia: {data.kpis?.sprintTrend > 0 ? 'ASCENDENTE' : 'DESCENDENTE'} 
-                  ({data.kpis?.sprintTrend || 0}%)
-                </p>
-              </div>
-            </div>
-          )}
-        </div>
-        
-        <div className="executive-card">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">
-            Tasa de Resolución por Sprint
-          </h3>
-          <div className="space-y-4">
-            {sprintData.map((sprint, index) => {
-              const total = (sprint.bugsResolved || 0) + (sprint.bugsPending || 0);
-              const resolved = sprint.bugsResolved || 0;
-              const rate = total > 0 ? Math.round((resolved / total) * 100) : 0;
-              
-              return (
-                <div key={sprint.sprint || index} className="flex items-center">
-                  <span className="w-16 text-sm font-medium text-gray-600">
-                    S{sprint.sprint || index + 1}:
-                  </span>
-                  <div className="flex-1 mx-4">
-                    <div className="bg-gray-200 rounded-full h-4">
-                      <div
-                        className="bg-executive-500 h-4 rounded-full"
-                        style={{ width: `${rate}%` }}
-                      />
-                    </div>
-                  </div>
-                  <span className="w-16 text-sm font-medium text-gray-900">
-                    {rate}%
-                  </span>
-                  <span className="w-20 text-xs text-gray-500 ml-2">
-                    {resolved}/{total}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-      
-      {/* Análisis de categorías */}
-      {data.bugsByCategory && (
-        <div className="executive-card">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">
-            Distribución por Categorías
-          </h3>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-            {Object.entries(data.bugsByCategory).map(([category, categoryData]) => (
-              <div key={category} className="text-center p-4 bg-gray-50 rounded-lg">
-                <div className="text-2xl font-bold text-executive-600 mb-1">
-                  {categoryData.count || 0}
-                </div>
-                <div className="text-xs text-gray-600 mb-1">{category}</div>
-                <div className="text-xs font-medium text-gray-900">
-                  {categoryData.percentage || 0}%
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
+
 
 function RecommendationsTab({ data }) {
   // Usar tanto recomendaciones existentes como nuevas
@@ -1413,53 +1497,13 @@ function RecommendationsTab({ data }) {
   
   return (
     <div className="space-y-8">
-      {/* Recomendaciones mejoradas */}
-      {recommendations.length > 0 ? (
-        <div className="executive-card">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">
-            Recomendaciones Inteligentes
-          </h3>
-          <div className="space-y-4">
-            {recommendations.map((rec, index) => (
-              <div key={rec.id || index} className="border-l-4 border-blue-500 pl-4 py-3">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <h4 className="font-medium text-gray-900 mb-1">{rec.title}</h4>
-                    <p className="text-sm text-gray-600 mb-2">{rec.description}</p>
-                    <div className="flex items-center space-x-3">
-                      <span className={`px-2 py-1 rounded text-xs font-medium ${
-                        rec.impact === 'high' ? 'bg-red-100 text-red-800' : 
-                        rec.impact === 'medium' ? 'bg-yellow-100 text-yellow-800' : 
-                        'bg-green-100 text-green-800'
-                      }`}>
-                        Impacto: {rec.impact}
-                      </span>
-                      <span className={`px-2 py-1 rounded text-xs font-medium ${
-                        rec.effort === 'high' ? 'bg-red-100 text-red-800' :
-                        rec.effort === 'medium' ? 'bg-yellow-100 text-yellow-800' :
-                        'bg-green-100 text-green-800'
-                      }`}>
-                        Esfuerzo: {rec.effort}
-                      </span>
-                      {rec.type && (
-                        <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs font-medium">
-                          {rec.type}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  <button className="text-sm text-blue-600 hover:text-blue-800 font-medium ml-4">
-                    Implementar
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      ) : (
-        // Usar el componente existente si no hay recomendaciones nuevas
-        <ExecutiveRecommendations data={data.recommendations} />
-      )}
+      {/* Recomendaciones (moviéndose al final del tab para mantener orden lógico) */}
+
+      {/* Quality Radar Chart integrado para aportar contexto de madurez y atributos */}
+      <div className="executive-card">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Roadmap de Madurez y Atributos</h3>
+        <QualityRadarChart data={data.qualityMetrics || data.processMaturity || {}} />
+      </div>
       
       {/* ROI y Métricas de Valor */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -1574,6 +1618,54 @@ function RecommendationsTab({ data }) {
             ))}
           </div>
         </div>
+      )}
+
+      {/* Recomendaciones mejoradas (movidas después del análisis predictivo) */}
+      {recommendations.length > 0 ? (
+        <div className="executive-card">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">
+            Recomendaciones Inteligentes
+          </h3>
+          <div className="space-y-4">
+            {recommendations.map((rec, index) => (
+              <div key={rec.id || index} className="border-l-4 border-blue-500 pl-4 py-3">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <h4 className="font-medium text-gray-900 mb-1">{rec.title}</h4>
+                    <p className="text-sm text-gray-600 mb-2">{rec.description}</p>
+                    <div className="flex items-center space-x-3">
+                      <span className={`px-2 py-1 rounded text-xs font-medium ${
+                        rec.impact === 'high' ? 'bg-red-100 text-red-800' : 
+                        rec.impact === 'medium' ? 'bg-yellow-100 text-yellow-800' : 
+                        'bg-green-100 text-green-800'
+                      }`}>
+                        Impacto: {rec.impact}
+                      </span>
+                      <span className={`px-2 py-1 rounded text-xs font-medium ${
+                        rec.effort === 'high' ? 'bg-red-100 text-red-800' :
+                        rec.effort === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-green-100 text-green-800'
+                      }`}>
+                        Esfuerzo: {rec.effort}
+                      </span>
+                      {rec.type && (
+                        <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs font-medium">
+                          {rec.type}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <button className="text-sm text-blue-600 hover:text-blue-800 font-medium ml-4">
+                    Implementar
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : (
+        // Usar el componente existente si no hay recomendaciones nuevas
+        <ExecutiveRecommendations data={data.recommendations} />
       )}
     </div>
   );

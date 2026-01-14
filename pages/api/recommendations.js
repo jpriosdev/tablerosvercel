@@ -13,8 +13,15 @@ export default function handler(req, res) {
     }
     
     const fileContents = fs.readFileSync(filePath, 'utf8');
-    const recommendations = JSON.parse(fileContents);
-    
+    let recommendations;
+    try {
+      recommendations = JSON.parse(fileContents);
+    } catch (parseError) {
+      console.error('JSON parse error recommendations.json:', parseError);
+      // Fallback seguro: devolver objeto vacío para que la UI use el motor por defecto
+      return res.status(200).json({});
+    }
+
     res.status(200).json(recommendations);
   } catch (error) {
     console.error('Error al leer recomendaciones:', error);

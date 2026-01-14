@@ -1,0 +1,115 @@
+{
+  "mediaCasosEjecutados": [
+    {
+      "condition": "avg < 120",
+      "text": "🚧 Cobertura baja: planificar incremento de casos y priorizar automatización en áreas críticas",
+      "priority": "alta",
+      "parametros": {
+        "rangoExcelente": ">=170",
+        "rangoAceptable": "120-169",
+        "rangoBajo": "<120"
+      }
+    },
+    {
+      "condition": "avg < 120",
+      "text": "🚧 Crear repositorio de casos reutilizables y estandarizar templates para facilitar automatización",
+      "priority": "alta"
+    },
+    {
+      "condition": "default",
+      "text": "🚧 Integrar QA en planning y definir criterios de aceptación desde la definición de HUs",
+      "priority": "alta"
+    },
+    {
+      "condition": "default",
+      "text": "🚧 Establecer Definition of Done con checklist de calidad antes de pasar a producción",
+      "priority": "media"
+    },
+    {
+      "condition": "default",
+      "text": "🚧 Capacitar al equipo en prácticas de testing y ownership de calidad",
+      "priority": "media"
+    },
+    {
+      "condition": "default",
+      "text": "🚧 Implementar smoke tests en pipeline para validar funciones críticas tras cada deploy",
+      "priority": "media"
+    }
+  ],
+  "densidadDefectos": [
+    {
+      "condition": "avg > 2.0",
+      "text": "🚧 Alta densidad: imponer code reviews y aumentar cobertura de unit tests al 80% mínimo",
+      "priority": "alta",
+      "parametros": {
+        "rangoExcelente": "<0.5",
+        "rangoBueno": "0.5-1.0",
+        "rangoMejorable": "1.0-2.0",
+        "rangoCritico": ">2.0"
+      }
+    },
+    {
+      "condition": "avg > 2.0",
+      "text": "🚧 Priorizar fixes en módulos con mayor incidencia y plan de refactor según impacto"
+    }
+  ],
+  "tiempoPromedioResolucion": [
+    {
+      "condition": "avg > 10",
+      "text": "🚧 Cycle Time alto: introducir dailies focalizados y eliminar bloqueadores dentro de 48h",
+      "priority": "alta",
+      "parametros": {
+        "rangoExcelente": "<=5",
+        "rangoAceptable": "6-10",
+        "rangoCritico": ">10"
+      }
+    },
+    {
+      "condition": "byPriority.critical > 5",
+      "text": "🚧 Críticos lentos: establecer SLA de 48h y asignar recursos dedicados a bugs críticos",
+      "priority": "alta"
+    },
+    {
+      "condition": "default",
+      "text": "🚧 Estandarizar reporte de bugs con pasos, evidencia y contexto para acelerar reproducciones",
+      "priority": "alta"
+    }
+  ],
+  "bugsCriticosDetectados": [
+    {
+      "condition": "total > 20",
+      "text": "🚧 Alta incidencia de críticos: establecer gate de calidad y no liberar con críticos abiertos",
+      "priority": "alta"
+    },
+    {
+      "condition": "default",
+      "text": "🚧 Definir y documentar criterios de severidad compartidos entre QA y Dev",
+      "priority": "alta"
+    }
+  ],
+  "estadoBugsCriticos": [
+    {
+      "condition": "pending > 10",
+      "text": "🚧 Urgente: congelar features no críticos y enfocar el equipo en estabilización",
+      "priority": "alta"
+    },
+    {
+      "condition": "default",
+      "text": "🚧 Implementar notificaciones automáticas a stakeholders ante nuevos bugs críticos",
+      "priority": "alta"
+    }
+  ],
+  "eficienciaResolucion": [
+    {
+      "condition": "efficiency < 70",
+      "text": "🚧 Eficiencia baja: definir flujo claro desde reporte hasta cierre y asignar owners",
+      "priority": "alta"
+    },
+    {
+      "condition": "default",
+      "text": "🚧 Definir SLAs por prioridad y medir cumplimiento para reducir tiempos de resolución",
+      "priority": "alta"
+    }
+  ],
+  "_legacy": {"testCases": "mediaCasosEjecutados", "defectDensity": "densidadDefectos", "cycleTime": "tiempoPromedioResolucion", "criticalBugs": "bugsCriticosDetectados", "criticalBugsStatus": "estadoBugsCriticos", "resolutionEfficiency": "eficienciaResolucion"}
+}

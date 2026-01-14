@@ -131,6 +131,11 @@ Filtros: status, module, developer, priority, sprint, search
 ```bash
 GET /api/quality-report
 ```
+ 
+## Notas sobre recomendaciones y datos adicionales
+
+- El dashboard carga recomendaciones desde `public/data/recommendations.json`. Si el JSON está corrupto, el endpoint `/api/recommendations` hace fallback a `{}` y la UI utiliza los valores por defecto del motor en `utils/recommendationEngine.js`.
+- Se recomienda mantener backups en `public/data/backups/` y validar cualquier edición del JSON antes de desplegar.
 Análisis completo + recomendaciones automáticas
 
 ## 🛠️ Desarrollo

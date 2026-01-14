@@ -207,6 +207,12 @@ fetch('/api/qa-data-v2?type=my-metric')
   .then(d => setData(d.data))
 ```
 
+## Cambios recientes relevantes
+
+- Motor de recomendaciones (`utils/recommendationEngine.js`) actualizado para marcar recomendaciones accionables con `icon`/`warningIcon` y añadir una `note` por defecto cuando aplica.
+- `components/ExecutiveRecommendations.js` actualizado para mostrar `recommendation.icon`, `recommendation.warningIcon` y `recommendation.note` en la interfaz.
+- `pages/api/recommendations.js` ahora captura errores de `JSON.parse` y devuelve `{}` como fallback; backups de `public/data/recommendations.json` se almacenan en `public/data/backups/`.
+
 ---
 
 ## 📈 Rendimiento

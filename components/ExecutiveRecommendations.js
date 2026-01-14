@@ -148,9 +148,18 @@ import {
                     {recommendations.map((recommendation, index) => (
                       <div key={index} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
                         <div className="flex items-start justify-between mb-3">
-                          <h5 className="text-md font-semibold text-gray-900">
-                            {recommendation.title}
+                          <h5 className="text-md font-semibold text-gray-900 flex items-center">
+                            {recommendation.icon ? (
+                              <span className="mr-2 text-lg leading-none">{recommendation.icon}</span>
+                            ) : null}
+                            <span>{recommendation.title}</span>
                           </h5>
+                          {recommendation.note ? (
+                            <div className="mt-2 text-sm text-yellow-700 flex items-center">
+                              <span className="mr-2">{recommendation.warningIcon || '⚠️'}</span>
+                              <span>{recommendation.note}</span>
+                            </div>
+                          ) : null}
                           <div className="flex items-center space-x-2 ml-4">
                             <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full border ${getPriorityColor(recommendation.priority)}`}>
                               {recommendation.priority}
