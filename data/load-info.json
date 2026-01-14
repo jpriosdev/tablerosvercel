@@ -1,0 +1,12 @@
+{
+  "timestamp": "2026-01-13T15:45:31.278Z",
+  "xlsxFile": "C:\\Users\\ultra\\PycharmProjects\\PythonProject\\TableroQA\\data\\Reporte_QA_V2.xlsx",
+  "database": "C:\\Users\\ultra\\PycharmProjects\\PythonProject\\TableroQA\\data\\tableroqua.db",
+  "loaded": {
+    "bugs": 360,
+    "sprints": 10,
+    "versions": 31,
+    "developers": 12,
+    "modules": 2
+  }
+}

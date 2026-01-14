@@ -105,6 +105,14 @@ node scripts/update-excel-data.js
 
 El script generará automáticamente `public/data/recommendations.json`.
 
+Nota: el motor de recomendaciones (`utils/recommendationEngine.js`) ahora añade metadatos a las recomendaciones accionables —incluye `icon` y `warningIcon`— y una `note` por defecto ("En desarrollo...") para recomendaciones que requieren especificación. El endpoint API `/api/recommendations` implementa un fallback seguro si `public/data/recommendations.json` no es válido.
+
+Backups y validación: se almacenan backups automáticos en `public/data/backups/`. Recomendado validar `public/data/recommendations.json` con:
+
+```bash
+node -e "const fs=require('fs'); JSON.parse(fs.readFileSync('public/data/recommendations.json','utf8')); console.log('recommendations.json OK')"
+```
+
 **Métricas disponibles:**
 - `testCases`: Media de casos ejecutados por sprint
 - `resolutionEfficiency`: Eficiencia de resolución

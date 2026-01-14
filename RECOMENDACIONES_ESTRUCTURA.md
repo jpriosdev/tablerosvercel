@@ -14,6 +14,14 @@ La hoja debe tener las siguientes columnas:
 - **Recomendacion**: Texto de la recomendación que se mostrará
 - **Prioridad**: alta, media, o baja
 
+Campos adicionales soportados en el JSON final y por el motor:
+
+- `icon` (string): emoji o símbolo que se muestra junto al título (ej: "🚧").
+- `warningIcon` (string): icono de advertencia mostrado junto a `note` (ej: "⚠️").
+- `note` (string): nota adicional para recomendaciones en desarrollo o generales.
+
+El motor validará las recomendaciones cargadas desde `public/data/recommendations.json` y, para las recomendaciones accionables (`priority` alta o media), puede prefijar `icon` y añadir `warningIcon` y `note` cuando no estén definidos.
+
 ## Ejemplos de filas:
 
 ### testCases (Media de Casos Ejecutados)
