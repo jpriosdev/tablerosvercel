@@ -1,13 +1,36 @@
 {
   "mediaCasosEjecutados": [
-    { "condition": "avg < 120", "text": "🚧 Cobertura baja: planificar incremento de casos y priorizar automatización en áreas críticas", "priority": "alta", "warningIcon": "⚠️", "note": "En desarrollo: requiere especificación." },
-    { "condition": "default", "text": "✅ Mantener ritmo de ejecución de pruebas y estandarizar templates", "priority": "media" }
+    {
+      "condition": "avg < 120",
+      "text": "🚧 Cobertura baja: planificar incremento de casos y priorizar automatización en áreas críticas",
+      "priority": "alta",
+      "warningIcon": "⚠️",
+      "note": "En desarrollo: requiere especificación."
+    },
+    {
+      "condition": "default",
+      "text": "✅ Mantener ritmo de ejecución de pruebas y estandarizar templates",
+      "priority": "media"
+    }
   ],
   "densidadDefectos": [
-    { "condition": "avg > 2.0", "text": "🚧 Alta densidad: imponer code reviews y aumentar cobertura de unit tests", "priority": "alta", "warningIcon": "⚠️", "note": "En desarrollo: requiere priorización." },
-    { "condition": "default", "text": "✅ Mantener prácticas de revisión y pruebas unitarias", "priority": "baja" }
+    {
+      "condition": "avg > 2.0",
+      "text": "🚧 Alta densidad: imponer code reviews y aumentar cobertura de unit tests",
+      "priority": "alta",
+      "warningIcon": "⚠️",
+      "note": "En desarrollo: requiere priorización."
+    },
+    {
+      "condition": "default",
+      "text": "✅ Mantener prácticas de revisión y pruebas unitarias",
+      "priority": "baja"
+    }
   ],
-  "_legacy": { "testCases": "mediaCasosEjecutados", "defectDensity": "densidadDefectos" }
+  "_legacy": {
+    "testCases": "mediaCasosEjecutados",
+    "defectDensity": "densidadDefectos"
+  }
 }
 {
   "mediaCasosEjecutados": [
