@@ -92,7 +92,7 @@ export default function ActionableRecommendations({ data, filteredSprintData }) 
       impact: 'Muy Alto',
       effort: 'Alto'
     });
-  } else if (defectDensity  => 0.0) {
+  } else if (defectDensity >= 0.0) {
     recommendations.push({
       category: 'quality',
       priority: 'medium',
@@ -164,7 +164,7 @@ export default function ActionableRecommendations({ data, filteredSprintData }) 
       impact: 'Muy Alto',
       effort: 'Alto'
     });
-  } else if (criticalBugsPercent > 20) {
+  } else if (criticalBugsPercent > 10) {
     recommendations.push({
       category: 'critical',
       priority: 'medium',

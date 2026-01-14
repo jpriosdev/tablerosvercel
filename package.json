@@ -9,7 +9,9 @@
         "lint": "next lint"
     },
     "dependencies": {
+        "critters": "0.0.25",
         "chart.js": "^4.4.0",
+        "sqlite3": "^5.1.6",
         "date-fns": "^2.30.0",
         "framer-motion": "^10.16.0",
         "lucide-react": "^0.294.0",
